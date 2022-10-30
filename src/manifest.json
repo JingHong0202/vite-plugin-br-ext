@@ -1,0 +1,14 @@
+{
+  "name": "first extension",
+  "version": "0.0.0.1",
+  "manifest_version": 3,
+  "description": "test extension",
+  "action": {
+    "default_popup": "./popup/popup.html",
+    "default_title": "Click me"
+  },
+  "background": {
+    "service_worker": "./main.js",
+    "type": "module"
+  }
+}
