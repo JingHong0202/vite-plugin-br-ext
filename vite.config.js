@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import test from './plugin/test';
+import crx3 from './plugin/vite-chrome-extension';
 import { resolve } from 'path';
 // import Inspect from 'vite-plugin-inspect';
 
@@ -15,7 +15,7 @@ export default defineConfig(({ command, mode }) => {
       // legacy({
       //   targets: ['defaults', 'not IE 11'],
       // }),
-      test(),
+      crx3(),
     ],
     build: {
       rollupOptions: {

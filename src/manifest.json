@@ -8,7 +8,7 @@
     "default_title": "Click me"
   },
   "background": {
-    "service_worker": "./main.js",
+    "service_worker": "./index.js",
     "type": "module"
   }
 }
