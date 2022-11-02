@@ -4,18 +4,25 @@ import { cwd } from 'process';
 import { normalizePath } from 'vite';
 import { set, get, getType } from '../utils';
 import { inputsReg, isNetWorkLink, includeNumber } from '../utils/reg';
+import iife from '../mixin/iife';
 
 export class ManiFest {
   origin;
   result;
-  // action;
-  // background;
-  // other;
   maniFestPath;
-  // attrHashMap = {};
-  resources = {};
+
   // rollup
+  resources = {};
   inputs = [];
+  preWork = {
+    service_worker: async (plugin, chunk, bundle) => {
+      if (!this.result['background.type']) {
+        return (await iife(plugin, chunk, bundle));
+      } else {
+        return chunk.fileName;
+      }
+    },
+  };
 
   constructor(options) {
     const maniFestJson = JSON.parse(
@@ -30,30 +37,9 @@ export class ManiFest {
       set,
       get,
     });
-    // this.action = this.parseAction();
-    // this.background = this.parseBackground();
-    // this.other = this.parseOther();
     this.inputs = this.resolveInputs();
     console.log('inputs', this.inputs);
   }
-
-  // parseAction() {
-  //   const { default_popup, ...other } = get(this.origin.action, {});
-
-  //   return {
-  //     inputs: default_popup ? path.join(cwd(), 'src', default_popup) : '',
-  //     parsed: { ...other },
-  //   };
-  // }
-
-  // parseBackground() {
-  //   const { service_worker, ...other } = get(this.origin.background, {});
-
-  //   return {
-  //     inputs: service_worker ? path.join(cwd(), 'src', service_worker) : '',
-  //     parsed: { ...other },
-  //   };
-  // }
 
   buildManifest(plugin) {
     Object.keys(this.resources).forEach(key => {
@@ -102,12 +88,12 @@ export class ManiFest {
         if (inputsReg.test(ext)) {
           resource.isEntry = true;
         }
+        
         resource.relativePath = target[key];
         resource.absolutePath = absolutePath;
         resource.attrPath = `${parent}.${key}`;
         resource.keyMap = keyMap;
         this.resources[keyMap] = resource;
-        resource = {};
       }
     }
   }
@@ -115,7 +101,7 @@ export class ManiFest {
   resolveInputs() {
     // 遍历解析 manifest.json
     this.traverseDeep(this.origin);
-
+    console.log(this.resources);
     return Object.entries(this.resources).reduce((accumulator, current) => {
       if (current[1].isEntry) {
         accumulator[current[1].keyMap] = current[1].absolutePath;

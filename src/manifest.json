@@ -10,5 +10,10 @@
   "background": {
     "service_worker": "./index.js",
     "type": "module"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["../u=3755297117,609162545&fm=26&fmt=auto.webp", "./popup/u=3755297117,609162545&fm=26&fmt=auto.webp"]
+    }
+  ]
 }

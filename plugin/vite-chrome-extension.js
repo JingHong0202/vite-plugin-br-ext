@@ -1,12 +1,14 @@
-import path from 'path';
+import fs from 'fs';
+import path, { relative } from 'path';
 import { cwd } from 'process';
 import { normalizePath } from 'vite';
 import { ManiFest } from './class/manifest';
 
 export default () => {
-  let maniFest;
+  let maniFest,
+    rootPath = normalizePath(cwd() + path.sep);
   return {
-    name: 'vite-plugin-test',
+    name: 'vite-chrome-extension',
 
     // config(config, { command }) {},
 
@@ -33,11 +35,26 @@ export default () => {
     //   console.log(outputOptions,inputOptions);
     // },
 
-    // // 5. 构建阶段的通用钩子：在服务器启动时被调用：每次开始构建时调用
-    // buildStart(options) {
-    //   // let { action } = parse;
-    //   // this.addWatchFile(path.join(cwd(), 'src', action.default_popup));
-    // },
+    // 5. 构建阶段的通用钩子：在服务器启动时被调用：每次开始构建时调用
+    async buildStart() {
+      Object.values(maniFest.resources)
+        .flatMap(resource => {
+          return !resource.isEntry
+            ? [
+                {
+                  type: 'asset',
+                  fileName: relative(rootPath, resource.absolutePath),
+                  source: fs.readFileSync(resource.absolutePath),
+                },
+              ]
+            : [];
+        })
+        .forEach(item => {
+          this.emitFile(item);
+        });
+
+      return null;
+    },
 
     // // 构建阶段的通用钩子：在每个传入模块请求时被调用：创建自定义确认函数，可以用来定位第三方依赖
     // resolveId(source, importer, options) {},
@@ -76,27 +93,33 @@ export default () => {
     // },
 
     // // 输出阶段钩子通用钩子：在调用 bundle.write 之前立即触发这个hook
-    generateBundle(options, bundle, isWrite) {
-      Object.values(bundle).forEach(chunk => {
-        const resourceAttrs = maniFest.resources[chunk.name];
+    async generateBundle(options, bundle, isWrite) {
+      for (const chunk of Object.values(bundle)) {
+        const resource = maniFest.resources[chunk.name];
         // handler HTML
         if (
           chunk.facadeModuleId &&
           path.extname(chunk.facadeModuleId) === '.html'
         ) {
-          resourceAttrs.output = {
-            path: chunk.facadeModuleId.replace(
-              normalizePath(cwd() + path.sep),
-              ''
-            ),
+          resource.output = {
+            path: chunk.facadeModuleId.replace(rootPath, ''),
           };
           // console.log(chunk.facadeModuleId, normalizePath(cwd()));
-        } else {
+        } else if (resource && resource.isEntry) {
           // handler JS
-          resourceAttrs.output = { path: chunk.fileName };
+          const path = resource.attrPath.split('.');
+
+          resource.output = {
+            path: maniFest.preWork[path[path.length - 1]]
+              ? await maniFest.preWork[path[path.length - 1]](
+                  this,
+                  chunk,
+                  bundle
+                )
+              : chunk.fileName,
+          };
         }
-      });
-      // console.log(maniFest.resources);
+      }
       maniFest.buildManifest(this);
     },
 
