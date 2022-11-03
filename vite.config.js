@@ -1,7 +1,9 @@
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import crx3 from './plugin/vite-chrome-extension';
-import { resolve } from 'path';
+import { join } from 'path';
+import { cwd } from 'process';
+
 // import Inspect from 'vite-plugin-inspect';
 
 // https://vitejs.dev/config/
@@ -19,7 +21,7 @@ export default defineConfig(({ command, mode }) => {
     ],
     build: {
       rollupOptions: {
-        input: resolve(__dirname, 'src/manifest.json'),
+        input: join(cwd(), './src/manifest.json'),
       },
     },
   };

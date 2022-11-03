@@ -4,16 +4,33 @@
   "manifest_version": 3,
   "description": "test extension",
   "action": {
-    "default_popup": "./popup/popup.html",
+    "default_popup": "popup/popup.html",
     "default_title": "Click me"
   },
+  "icons": {
+    "32": "./popup/u=3755297117,609162545&fm=26&fmt=auto copy.webp"
+  },
   "background": {
-    "service_worker": "./index.js",
+    "service_worker": "index.js",
     "type": "module"
   },
   "web_accessible_resources": [
     {
-      "resources": ["../u=3755297117,609162545&fm=26&fmt=auto.webp", "./popup/u=3755297117,609162545&fm=26&fmt=auto.webp"]
+      "resources": [
+        "popup/u=3755297117,609162545&fm=26&fmt=auto.webp",
+        "asset/*"
+      ],
+      "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["js/*.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["main.js"]
     }
   ]
 }

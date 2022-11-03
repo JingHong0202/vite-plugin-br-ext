@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path, { relative } from 'path';
+import path from 'path';
 import { cwd } from 'process';
 import { normalizePath } from 'vite';
 import { ManiFest } from './class/manifest';
@@ -37,22 +37,7 @@ export default () => {
 
     // 5. 构建阶段的通用钩子：在服务器启动时被调用：每次开始构建时调用
     async buildStart() {
-      Object.values(maniFest.resources)
-        .flatMap(resource => {
-          return !resource.isEntry
-            ? [
-                {
-                  type: 'asset',
-                  fileName: relative(rootPath, resource.absolutePath),
-                  source: fs.readFileSync(resource.absolutePath),
-                },
-              ]
-            : [];
-        })
-        .forEach(item => {
-          this.emitFile(item);
-        });
-
+      maniFest.handlerResources(this);
       return null;
     },
 
@@ -95,7 +80,7 @@ export default () => {
     // // 输出阶段钩子通用钩子：在调用 bundle.write 之前立即触发这个hook
     async generateBundle(options, bundle, isWrite) {
       for (const chunk of Object.values(bundle)) {
-        const resource = maniFest.resources[chunk.name];
+        const resource = maniFest.hashTable[chunk.name];
         // handler HTML
         if (
           chunk.facadeModuleId &&
@@ -108,14 +93,11 @@ export default () => {
         } else if (resource && resource.isEntry) {
           // handler JS
           const path = resource.attrPath.split('.');
-
+          const preWorkName = path.find(current => maniFest.preWork[current]);
+          // console.log(maniFest.preWork[preWorkName]);
           resource.output = {
-            path: maniFest.preWork[path[path.length - 1]]
-              ? await maniFest.preWork[path[path.length - 1]](
-                  this,
-                  chunk,
-                  bundle
-                )
+            path: preWorkName
+              ? (await maniFest.preWork[preWorkName](this, chunk, bundle, resource))
               : chunk.fileName,
           };
         }
@@ -124,7 +106,7 @@ export default () => {
     },
 
     // // 输出阶段钩子通用钩子：在调用 bundle.write后，所有的chunk都写入文件后，最后会调用一次 writeBundle
-    writeBundle(options, bundle) {},
+    // writeBundle(options, bundle) {},
     // // 通用钩子：在服务器关闭时被调用
     // closeBundle() {},
   };
