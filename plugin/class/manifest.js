@@ -9,6 +9,7 @@ import {
   includeNumber,
   isWebResources,
   isJSFile,
+  isPrepCSSFile,
 } from '../utils/reg';
 import { hasMagic, sync } from 'glob';
 import iife from '../mixin/iife';
@@ -33,14 +34,16 @@ export class ManiFest {
     web_accessible_resources: async (plugin, chunk, bundle, self) => {
       if (isJSFile.test(self.ext)) {
         return await iife(plugin, chunk, bundle);
+      } else {
+        return chunk.fileName;
       }
-      return chunk.fileName;
     },
     content_scripts: async (plugin, chunk, bundle, self) => {
       if (isJSFile.test(self.ext)) {
         return await iife(plugin, chunk, bundle);
+      } else {
+        return chunk.fileName;
       }
-      return chunk.fileName;
     },
   };
 
@@ -65,6 +68,58 @@ export class ManiFest {
     console.log('inputs', this.inputs);
   }
 
+  async handlerCSS(plugin, chunk, bundle) {
+    const dependciesName = path.extname(chunk.fileName).slice(1);
+    let source;
+    if (dependciesName === 'scss' || dependciesName === 'sass') {
+      const CSSHandler = require('sass');
+      const result = CSSHandler.compile(
+        normalizePath(
+          path.join(path.dirname(this.maniFestPath), chunk.fileName)
+        ),
+        { style: 'compressed' }
+      );
+      source = result.css;
+    } else if (dependciesName === 'less') {
+      const CSSHandler = require('less');
+      const result = await CSSHandler.render(
+        fs.readFileSync(
+          normalizePath(
+            path.join(path.dirname(this.maniFestPath), chunk.fileName)
+          ),
+          'utf-8'
+        ),
+        { compress: true }
+      );
+      source = result.css;
+    } else if (dependciesName === 'styl' || dependciesName === 'stylus') {
+      const CSSHandler = require('stylus');
+      console.log(CSSHandler);
+      const result = CSSHandler.render({
+        data: fs.readFileSync(
+          normalizePath(
+            path.join(path.dirname(this.maniFestPath), chunk.fileName)
+          ),
+          'utf-8'
+        ),
+      });
+      console.log(result);
+      source = result.css;
+    }
+    delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)];
+
+    const referenceId = plugin.emitFile({
+      fileName: `${chunk.fileName.replace(
+        path.extname(chunk.fileName),
+        ''
+      )}.css`,
+      source,
+      type: 'asset',
+    });
+
+    return plugin.getFileName(referenceId);
+  }
+
   handlerResources(plugin) {
     Object.values(this.hashTable)
       .flatMap(resource => {
@@ -84,7 +139,7 @@ export class ManiFest {
           : [];
       })
       .forEach(item => {
-        // console.log(item.fileName);
+        // console.log('handlerResources:', item.fileName);
         plugin.emitFile(item);
       });
   }
@@ -92,7 +147,10 @@ export class ManiFest {
   buildManifest(plugin) {
     Object.keys(this.hashTable).forEach(key => {
       const resource = this.hashTable[key];
-      if (resource.isEntry && !isWebResources.test(resource.attrPath)) {
+      if (isWebResources.test(resource.attrPath)) return;
+      if (resource.isEntry) {
+        this.result[resource.attrPath] = resource.output.path;
+      } else if (isPrepCSSFile.test(resource.ext)) {
         this.result[resource.attrPath] = resource.output.path;
       }
     });
@@ -118,7 +176,6 @@ export class ManiFest {
         !includeNumber.test(ext)
       ) {
         // 处理有后缀的路径
-
         // 特例：处理 *.js *.html
         if (hasMagic(target[key]) && parent) {
           return this.matchFileByRules(target[key], parent);
@@ -145,7 +202,7 @@ export class ManiFest {
 
         resource.relativePath = target[key];
         resource.absolutePath = absolutePath;
-        resource.attrPath = `${parent}.${key}`;
+        resource.attrPath = `${parent ? `${parent}.${key}` : key}`;
         resource.keyMap = keyMap;
         resource.ext = ext;
         this.hashTable[keyMap] = resource;
@@ -159,11 +216,11 @@ export class ManiFest {
     }
   }
 
-  matchFileByRules(rules, parent) {
+  matchFileByRules(rules, parent = '') {
     const files = sync(rules, {
       cwd: path.dirname(this.maniFestPath),
     });
-    console.log(files);
+    // console.log(files);
     files && files.length && this.traverseDeep(files, parent);
   }
 

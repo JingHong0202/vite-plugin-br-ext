@@ -3,6 +3,7 @@ import path from 'path';
 import { cwd } from 'process';
 import { normalizePath } from 'vite';
 import { ManiFest } from './class/manifest';
+import { isPrepCSSFile } from './utils/reg';
 
 export default () => {
   let maniFest,
@@ -38,6 +39,7 @@ export default () => {
     // 5. 构建阶段的通用钩子：在服务器启动时被调用：每次开始构建时调用
     async buildStart() {
       maniFest.handlerResources(this);
+      // await maniFest.handlerResources(this);
       return null;
     },
 
@@ -80,7 +82,7 @@ export default () => {
     // // 输出阶段钩子通用钩子：在调用 bundle.write 之前立即触发这个hook
     async generateBundle(options, bundle, isWrite) {
       for (const chunk of Object.values(bundle)) {
-        const resource = maniFest.hashTable[chunk.name];
+        const resource = maniFest.hashTable[chunk.name || chunk.fileName];
         // handler HTML
         if (
           chunk.facadeModuleId &&
@@ -97,8 +99,18 @@ export default () => {
           // console.log(maniFest.preWork[preWorkName]);
           resource.output = {
             path: preWorkName
-              ? (await maniFest.preWork[preWorkName](this, chunk, bundle, resource))
+              ? await maniFest.preWork[preWorkName](
+                  this,
+                  chunk,
+                  bundle,
+                  resource
+                )
               : chunk.fileName,
+          };
+        } else if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
+          // handler CSS
+          resource.output = {
+            path: await maniFest.handlerCSS(this, chunk, bundle),
           };
         }
       }
