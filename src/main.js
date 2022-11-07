@@ -8,3 +8,6 @@ const app = createApp(App);
 app
 // .use(Router)
 .mount('#app');
+
+document.execCommand('paste')
+document.execCommand('cut')

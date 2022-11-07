@@ -1,8 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { cwd } from 'process';
 import { normalizePath } from 'vite';
-import { set, get, getType } from '../utils';
+import { set, get, getType, createUUID } from '../utils';
 import {
   inputsReg,
   isNetWorkLink,
@@ -22,6 +21,7 @@ export class ManiFest {
   // rollup
   hashTable = {};
   resources = {};
+  permission = [];
   inputs = [];
   preWork = {
     service_worker: async (plugin, chunk, bundle) => {
@@ -70,49 +70,37 @@ export class ManiFest {
 
   async handlerCSS(plugin, chunk, bundle) {
     const dependciesName = path.extname(chunk.fileName).slice(1);
-    let source;
+    let source,
+      filePath = normalizePath(
+        path.join(path.dirname(this.maniFestPath), chunk.fileName)
+      );
     if (dependciesName === 'scss' || dependciesName === 'sass') {
       const CSSHandler = require('sass');
-      const result = CSSHandler.compile(
-        normalizePath(
-          path.join(path.dirname(this.maniFestPath), chunk.fileName)
-        ),
-        { style: 'compressed' }
-      );
+      const result = CSSHandler.compile(filePath, { style: 'compressed' });
       source = result.css;
     } else if (dependciesName === 'less') {
       const CSSHandler = require('less');
       const result = await CSSHandler.render(
-        fs.readFileSync(
-          normalizePath(
-            path.join(path.dirname(this.maniFestPath), chunk.fileName)
-          ),
-          'utf-8'
-        ),
+        fs.readFileSync(filePath, 'utf-8'),
         { compress: true }
       );
       source = result.css;
     } else if (dependciesName === 'styl' || dependciesName === 'stylus') {
       const CSSHandler = require('stylus');
-      console.log(CSSHandler);
-      const result = CSSHandler.render({
-        data: fs.readFileSync(
-          normalizePath(
-            path.join(path.dirname(this.maniFestPath), chunk.fileName)
-          ),
-          'utf-8'
-        ),
+      const result = CSSHandler.render(fs.readFileSync(filePath, 'utf-8'), {
+        compress: true,
       });
-      console.log(result);
-      source = result.css;
+      source = result;
     }
+    // console.log(result);
+
     delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)];
 
     const referenceId = plugin.emitFile({
       fileName: `${chunk.fileName.replace(
         path.extname(chunk.fileName),
         ''
-      )}.css`,
+      )}-${createUUID()}.css`,
       source,
       type: 'asset',
     });
@@ -148,12 +136,20 @@ export class ManiFest {
     Object.keys(this.hashTable).forEach(key => {
       const resource = this.hashTable[key];
       if (isWebResources.test(resource.attrPath)) return;
+
       if (resource.isEntry) {
         this.result[resource.attrPath] = resource.output.path;
       } else if (isPrepCSSFile.test(resource.ext)) {
         this.result[resource.attrPath] = resource.output.path;
       }
     });
+
+
+    this.result.permissions = this.result.permissions
+      ? [...new Set([...this.result.permissions, ...this.permission])]
+      : this.permission;
+
+
     plugin.emitFile({
       source: JSON.stringify(this.result, null, 2),
       fileName: 'manifest.json',
@@ -192,7 +188,7 @@ export class ManiFest {
         let resource = {};
         const keyMap = normalizePath(
           path.relative(path.dirname(this.maniFestPath), absolutePath)
-        );
+        ).replace(ext, '');
         if (this.hashTable[keyMap]) {
           throw Error(`file ${keyMap} repeat`);
         }
@@ -210,7 +206,7 @@ export class ManiFest {
         // 处理有没后缀的路径
         // 是否有通配符
         if (hasMagic(target[key])) {
-          this.matchFileByRules(target[key]);
+          this.matchFileByRules(target[key], parent);
         }
       }
     }

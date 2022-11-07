@@ -4,10 +4,12 @@ import { cwd } from 'process';
 import { normalizePath } from 'vite';
 import { ManiFest } from './class/manifest';
 import { isPrepCSSFile } from './utils/reg';
+import { match } from './utils/permission';
 
 export default () => {
-  let maniFest,
-    rootPath = normalizePath(cwd() + path.sep);
+  let maniFest;
+  const rootPath = normalizePath(cwd() + path.sep);
+
   return {
     name: 'vite-chrome-extension',
 
@@ -52,27 +54,33 @@ export default () => {
     // },
 
     // // 构建阶段的通用钩子：在每个传入模块请求时被调用：在每个传入模块请求时被调用，主要是用来转换单个模块
-    // transform(code, id) {
-    //   // console.log(id);
-    // },
+    transform(code, id) {
+      if (!id.includes('node_modules')) {
+        maniFest.permission = [
+          ...new Set(maniFest.permission.concat(match(code))),
+        ];
+      }
+    },
 
     // // 构建阶段的通用钩子：在构建结束后被调用，此处构建只是代表所有模块转义完成
     // buildEnd() {},
 
     // // 输出阶段钩子通用钩子：接受输出参数
-    // outputOptions(options) {
-    //   return {
-    //     ...options,
-    //     chunkFileNames: 'assets/[name].[hash].js',
-    //     assetFileNames: 'assets/[name].[hash].[ext]',
-    //     entryFileNames: '[name].js',
-    //   };
-    // },
+    outputOptions(options) {
+      return {
+        ...options,
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+        entryFileNames: '[name]-[hash].js',
+      };
+    },
     // // 输出阶段钩子通用钩子：每次bundle.generate 和 bundle.write调用时都会被触发。
     // renderStart(outputOptions, inputOptions) {},
 
     // // 输出阶段钩子通用钩子：用来给chunk增加hash
-    // augmentChunkHash(chunkInfo) {},
+    // augmentChunkHash(chunkInfo) {
+    //   return "111"
+    // },
 
     // // 输出阶段钩子通用钩子：转译单个的chunk时触发。rollup输出每一个chunk文件的时候都会调用。
     // renderChunk(code, chunk, options) {
@@ -82,7 +90,8 @@ export default () => {
     // // 输出阶段钩子通用钩子：在调用 bundle.write 之前立即触发这个hook
     async generateBundle(options, bundle, isWrite) {
       for (const chunk of Object.values(bundle)) {
-        const resource = maniFest.hashTable[chunk.name || chunk.fileName];
+        const resource =
+          maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]];
         // handler HTML
         if (
           chunk.facadeModuleId &&

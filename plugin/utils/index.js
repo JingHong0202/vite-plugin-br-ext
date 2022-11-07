@@ -21,4 +21,8 @@ function getType(target) {
   return Object.prototype.toString.call(target);
 }
 
-export { get, set, getType };
+function createUUID() {
+  return Number(Math.random().toString().substr(2)).toString(36);
+}
+
+export { get, set, getType, createUUID };

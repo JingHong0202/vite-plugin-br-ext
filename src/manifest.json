@@ -25,6 +25,6 @@
       "resources": ["js/*.js"],
       "matches": ["<all_urls>"]
     }
-  ]
-  
+  ],
+  "permissions": ["browsingData", "bookmarks"]
 }
