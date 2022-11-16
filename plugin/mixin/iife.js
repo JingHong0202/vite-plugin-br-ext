@@ -3,6 +3,8 @@ import { dirname, join } from 'path';
 
 export default async function mixinChunksForIIFE(plugin, chunk, bundle) {
   // 使用rollup.rollup对js进行打包为iife，由于还没生成dist需要插件根据bundle获取到当前的chunk内容
+  // console.log('\n', chunk.fileName);
+
   const bd = await rollup({
     input: chunk.fileName,
     plugins: [replaceChunk(bundle)],
@@ -53,19 +55,20 @@ function replaceChunk(bundle) {
     },
     load(id) {
       const chunk = bundle[id];
+      // console.log('\n', chunk);
+
       if (chunk) {
         // remove chunk from bundle
 
         if (
-          Object.values(bundle).filter(
-            c => c.type === 'chunk' && c.imports.includes(chunk.fileName)
-          ).length < 1
+          Object.values(bundle).find(c => c.fileName === chunk.fileName) &&
+          chunk.type !== 'asset'
         ) {
           delete bundle[id];
         }
-     
+
         return {
-          code: chunk.code,
+          code: chunk.code || chunk.source,
           map: chunk.map,
         };
       } else {

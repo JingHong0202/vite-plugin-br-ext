@@ -17,7 +17,7 @@
     {
       "resources": [
         "popup/u=3755297117,609162545&fm=26&fmt=auto.webp",
-        "asset/*"
+        "asset/*/*"
       ],
       "matches": ["<all_urls>"]
     },
@@ -26,5 +26,10 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "permissions": ["browsingData", "bookmarks"]
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["./asset/css/style1copy2.css"]
+    }
+  ]
 }

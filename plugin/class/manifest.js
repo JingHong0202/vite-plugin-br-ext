@@ -1,7 +1,8 @@
 import path from 'path';
 import fs from 'fs';
 import { normalizePath } from 'vite';
-import { set, get, getType, createUUID } from '../utils';
+import { set, get, getType, createUUID, parsePreCSS } from '../utils';
+import { match } from '../utils/permission';
 import {
   inputsReg,
   isNetWorkLink,
@@ -9,6 +10,10 @@ import {
   isWebResources,
   isJSFile,
   isPrepCSSFile,
+  executeScriptReg,
+  annotationRows,
+  insertCSSReg,
+  filesReg,
 } from '../utils/reg';
 import { hasMagic, sync } from 'glob';
 import iife from '../mixin/iife';
@@ -19,10 +24,23 @@ export class ManiFest {
   maniFestPath;
 
   // rollup
+
+  // 存储所有输出资源 HashMap
   hashTable = {};
-  resources = {};
+
+  // 所有输出资源
+  // resources = {};
+
+  // 存储动态导入资源
+  dynamicImports = new Map();
+
+  // 存储解析出的权限
   permission = [];
+
+  // 存储所有输入资源
   inputs = [];
+
+  // 写入manifest之前的处理操作，作用：对个别字段输出进行单独处理
   preWork = {
     service_worker: async (plugin, chunk, bundle) => {
       if (!this.result['background.type']) {
@@ -45,6 +63,7 @@ export class ManiFest {
         return chunk.fileName;
       }
     },
+    toIIFE: iife,
   };
 
   constructor(options) {
@@ -68,32 +87,216 @@ export class ManiFest {
     console.log('inputs', this.inputs);
   }
 
+  async handerPermission(code) {
+    this.permission = [...new Set(this.permission.concat(match(code)))];
+  }
+
+  async handlerDynamicInput(plugin, code, id) {
+    // 去除注释
+    code = code.replace(annotationRows(), '');
+    // 处理动态JS文件
+    code = await this.handlerDynamicJS(plugin, code);
+    // 处理动态CSS文件
+    code = await this.handlerDynamicCSS(plugin, code);
+
+    return code;
+  }
+
+  async handlerDynamicJS(plugin, code) {
+    let matchAll = [];
+    for (const match of code.matchAll(executeScriptReg())) {
+      const lastIndex = match.index + (match[0].length - 1);
+      matchAll.push({
+        start: match.index,
+        end: lastIndex,
+      });
+    }
+
+    if (!matchAll.length) return code;
+    matchAll = matchAll.flatMap(item => {
+      let result = ['('];
+
+      while (result.length) {
+        ++item.end;
+        if (/[\(\{]/.test(code[item.end])) {
+          result.push(code[item.end]);
+        } else if (code[item.end] === ')') {
+          result.splice(result.indexOf('('), 1);
+        } else if (code[item.end] === '}') {
+          result.splice(result.indexOf('{'), 1);
+        }
+      }
+
+      let block = code.slice(item.start, item.end + 1);
+      const filesField = block.match(filesReg());
+      if (filesField) {
+        const urlMatch = filesField[1]
+          .replace(/[\"\']/g, '')
+          .split(',')
+          .map(i => i.trim());
+        item.filesFieldStartIndex = filesField.index + item.start;
+        item.filesFieldEndIndex =
+          filesField.index + item.start + filesField[0].length;
+        // console.log('\n',code.slice(item.filesFieldStartIndex, item.filesFieldEndIndex));
+        item.files = urlMatch;
+        return [item];
+      }
+      return [];
+    });
+
+    let diff = 0;
+    // console.log(matchAll);
+
+    for (const iterator of matchAll) {
+      const newFiles = await Promise.all(
+        iterator.files.map(async file => {
+          const filePath = normalizePath(
+            path.join(path.dirname(this.maniFestPath), file)
+          );
+          if (!fs.existsSync(filePath)) {
+            throw Error(`dynamic ${file} Not Found`);
+          }
+
+          const fileInfo = path.parse(filePath),
+            fileName = `dynamic/${fileInfo.name}-${createUUID()}${
+              fileInfo.ext
+            }`;
+          const refererId = plugin.emitFile({
+            id: filePath,
+            type: 'chunk',
+            fileName,
+          });
+          // this.dynamicImports.push(refererId);
+          // console.log(plugin.getFileName(refererId));
+          return normalizePath(`/${fileName}`);
+        })
+      );
+      const replaceStr = code.slice(
+          diff + iterator.filesFieldStartIndex,
+          diff + iterator.filesFieldEndIndex
+        ),
+        replaceVal = `files: ${JSON.stringify(newFiles)}`;
+      diff = diff + Math.max(0, replaceVal.length - replaceStr.length);
+      // console.log(diff);
+      code = code.replace(replaceStr, replaceVal);
+    }
+
+    return code;
+  }
+
+  async handlerDynamicCSS(plugin, code) {
+    let matchAll = [];
+    // console.log(code.matchAll(insertCSSReg()));
+    for (const match of code.matchAll(insertCSSReg())) {
+      const lastIndex = match.index + (match[0].length - 1);
+      matchAll.push({
+        start: match.index,
+        end: lastIndex,
+      });
+    }
+
+    if (!matchAll.length) return code;
+    // console.log(code);
+
+    matchAll = matchAll.flatMap(item => {
+      let result = ['('];
+
+      while (result.length) {
+        ++item.end;
+        if (/[\(\{]/.test(code[item.end])) {
+          result.push(code[item.end]);
+        } else if (code[item.end] === ')') {
+          result.splice(result.indexOf('('), 1);
+        } else if (code[item.end] === '}') {
+          result.splice(result.indexOf('{'), 1);
+        }
+      }
+
+      let block = code.slice(item.start, item.end + 1);
+      const filesField = block.match(filesReg());
+      if (filesField) {
+        const urlMatch = filesField[1].split(',').flatMap(i => {
+          return [
+            /[\"\'](.+)[\"\']$/g.test(i)
+              ? { val: i.replace(/[\"\']/g, '').trim(), type: 'path' }
+              : { val: i, type: 'variable' },
+          ];
+        });
+        // console.log(urlMatch);
+        item.filesFieldStartIndex = filesField.index + item.start;
+        item.filesFieldEndIndex =
+          filesField.index + item.start + filesField[0].length;
+        // console.log('\n',code.slice(item.filesFieldStartIndex, item.filesFieldEndIndex));
+        item.files = urlMatch;
+        return [item];
+      }
+      return [];
+    });
+
+    let diff = 0;
+    for (const iterator of matchAll) {
+      const newFiles = await Promise.all(
+        iterator.files.map(async file => {
+          if (file.type === 'variable') {
+            return file.val;
+          } else if (file.type === 'path') {
+            const filePath = normalizePath(
+              path.join(path.dirname(this.maniFestPath), file.val)
+            );
+            // console.log(filePath);
+            if (!fs.existsSync(filePath)) {
+              throw Error(`dynamic ${file.val} Not Found`);
+            }
+
+            const fileInfo = path.parse(filePath),
+              fileName = `dynamic/${fileInfo.name}-${createUUID()}.css`;
+            const refererId = plugin.emitFile({
+              type: 'asset',
+              source: fs.readFileSync(filePath, 'utf-8'),
+              fileName,
+            });
+            this.dynamicImports.set(
+              fileName,
+              path.relative(path.dirname(this.maniFestPath), filePath)
+            );
+            // this.dynamicImports.push(refererId);
+            // console.log(plugin.getFileName(refererId));
+            return normalizePath(`/${fileName}`);
+          }
+        })
+      );
+
+      const replaceStr = code.slice(
+          diff + iterator.filesFieldStartIndex,
+          diff + iterator.filesFieldEndIndex
+        ),
+        replaceVal = `files: ${JSON.stringify(newFiles)}`;
+      diff = diff + Math.max(0, replaceVal.length - replaceStr.length);
+      code = code.replace(replaceStr, replaceVal);
+    }
+
+    return code;
+  }
+
   async handlerCSS(plugin, chunk, bundle) {
-    const dependciesName = path.extname(chunk.fileName).slice(1);
-    let source,
+    let dependciesName = path.extname(chunk.fileName).slice(1),
       filePath = normalizePath(
         path.join(path.dirname(this.maniFestPath), chunk.fileName)
       );
-    if (dependciesName === 'scss' || dependciesName === 'sass') {
-      const CSSHandler = require('sass');
-      const result = CSSHandler.compile(filePath, { style: 'compressed' });
-      source = result.css;
-    } else if (dependciesName === 'less') {
-      const CSSHandler = require('less');
-      const result = await CSSHandler.render(
-        fs.readFileSync(filePath, 'utf-8'),
-        { compress: true }
-      );
-      source = result.css;
-    } else if (dependciesName === 'styl' || dependciesName === 'stylus') {
-      const CSSHandler = require('stylus');
-      const result = CSSHandler.render(fs.readFileSync(filePath, 'utf-8'), {
-        compress: true,
-      });
-      source = result;
-    }
-    // console.log(result);
 
+    if (this.dynamicImports.has(chunk.fileName)) {
+      const hash = this.dynamicImports.get(chunk.fileName);
+      filePath = normalizePath(
+        path.join(path.dirname(this.maniFestPath), hash)
+      );
+      dependciesName = path.extname(hash).slice(1);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      throw Error(`${filePath} Not Found`);
+    }
+
+    const source = await parsePreCSS(dependciesName, filePath);
     delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)];
 
     const referenceId = plugin.emitFile({
@@ -143,12 +346,9 @@ export class ManiFest {
         this.result[resource.attrPath] = resource.output.path;
       }
     });
-
-
     this.result.permissions = this.result.permissions
       ? [...new Set([...this.result.permissions, ...this.permission])]
       : this.permission;
-
 
     plugin.emitFile({
       source: JSON.stringify(this.result, null, 2),
@@ -167,11 +367,12 @@ export class ManiFest {
         this.traverseDeep(target[key], `${parent ? `${parent}.${key}` : key}`);
       } else if (
         typeof target[key] === 'string' &&
-        !isNetWorkLink.test(target[key]) &&
+        !isNetWorkLink().test(target[key]) &&
         (ext = path.extname(target[key])) &&
-        !includeNumber.test(ext)
+        !includeNumber().test(ext)
       ) {
         // 处理有后缀的路径
+
         // 特例：处理 *.js *.html
         if (hasMagic(target[key]) && parent) {
           return this.matchFileByRules(target[key], parent);
@@ -180,18 +381,22 @@ export class ManiFest {
         const absolutePath = normalizePath(
           path.join(path.dirname(this.maniFestPath), target[key])
         );
+
         if (!fs.existsSync(absolutePath)) {
           console.log(`${absolutePath} Not Found`);
           continue;
         }
 
         let resource = {};
+
         const keyMap = normalizePath(
           path.relative(path.dirname(this.maniFestPath), absolutePath)
         ).replace(ext, '');
+
         if (this.hashTable[keyMap]) {
           throw Error(`file ${keyMap} repeat`);
         }
+
         if (inputsReg.test(ext)) {
           resource.isEntry = true;
         }

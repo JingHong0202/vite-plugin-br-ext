@@ -1,4 +1,4 @@
-import { clipReg } from './reg';
+import { clipReg, PermissionNormalReg } from './reg';
 import { getType } from '.';
 
 const list = [
@@ -79,13 +79,10 @@ const list = [
 
 export function match(code) {
   return list.reduce((accumulator, item) => {
-    if (
-      typeof item === 'string' &&
-      new RegExp(`chrome[\\s\\n]*\\.[\\s\\n]*${item}`).test(code)
-    ) {
+    if (typeof item === 'string' && PermissionNormalReg(item).test(code)) {
       accumulator.push(item);
     } else if (
-      getType(item.features) === '[object Object]' &&
+      getType(item.features) === '[object RegExp]' &&
       item.features.test(code)
     ) {
       accumulator.push(item.name);
