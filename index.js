@@ -1,7 +1,7 @@
 import path from 'path';
 import { cwd } from 'process';
 import { normalizePath } from 'vite';
-import { ManiFest } from './class/manifest';
+import { ManiFest } from './manifest';
 import { isPrepCSSFile } from './utils/reg';
 
 export default () => {
@@ -9,7 +9,21 @@ export default () => {
   const rootPath = normalizePath(cwd() + path.sep);
 
   return {
-    name: 'vite-chrome-extension',
+    name: 'vite-plugin-chrome-extension',
+
+    config(config) {
+      // default
+      if (
+        !config.build.rollupOptions ||
+        !config.build.rollupOptions.input ||
+        !config.build.rollupOptions.input.includes('manifest.json')
+      ) {
+        config.build = {
+          rollupOptions: { input: path.join(cwd(), './src/manifest.json') },
+        };
+        console.log(config);
+      }
+    },
 
     options: async options => {
       maniFest = new ManiFest(options);
@@ -17,14 +31,11 @@ export default () => {
       return options;
     },
 
-    // 5. 构建阶段的通用钩子：在服务器启动时被调用：每次开始构建时调用
     async buildStart() {
       maniFest.handlerResources(this);
-      // await maniFest.handlerResources(this);
       return null;
     },
 
-    // // 构建阶段的通用钩子：在每个传入模块请求时被调用：在每个传入模块请求时被调用，主要是用来转换单个模块
     async transform(code, id) {
       if (!id.includes('node_modules')) {
         const newCode = await maniFest.handlerDynamicInput(this, code, id);
@@ -32,7 +43,6 @@ export default () => {
       }
     },
 
-    // // 输出阶段钩子通用钩子：接受输出参数
     outputOptions(options) {
       return {
         ...options,
@@ -42,7 +52,6 @@ export default () => {
       };
     },
 
-    // // 输出阶段钩子通用钩子：在调用 bundle.write 之前立即触发这个hook
     async generateBundle(options, bundle, isWrite) {
       // console.log(bundle);
       for (const chunk of Object.values(bundle)) {
