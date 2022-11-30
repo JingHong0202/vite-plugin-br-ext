@@ -1,5 +1,5 @@
 {
-  "name": "vite-plugin-browser-extension",
+  "name": "vite-plugin-br-ext",
   "version": "0.0.1",
   "description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
   "main": "index.js",
