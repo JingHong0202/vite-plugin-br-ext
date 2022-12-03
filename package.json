@@ -2,13 +2,18 @@
   "name": "vite-plugin-br-ext",
   "version": "0.0.1",
   "description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
-  "main": "index.js",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.umd.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JingHong0202/vite-plugin-browser-extension.git"
   },
   "keywords": [
-    "vite",
+    "vite-plugin",
     "manifest V3",
     "chorme extension"
   ],
@@ -17,5 +22,18 @@
   "bugs": {
     "url": "https://github.com/JingHong0202/vite-plugin-browser-extension/issues"
   },
-  "homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme"
+  "homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme",
+  "dependencies": {
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^23.0.3",
+    "@rollup/plugin-json": "^5.0.2",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "rollup": "^3.5.1"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=12.0.0"
+  }
 }
