@@ -18,7 +18,8 @@ npm install vite-plugin-br-ext -D
 ```js
 import bex from 'vite-plugin-br-ext';
 
-plugins: [bex()];
+// first args: 开启插件自动重载
+plugins: [bex(true)];  
 ```
 
 > 2.2 设置入口文件

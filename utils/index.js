@@ -1,4 +1,6 @@
 import fs from 'fs';
+import path from 'path';
+
 function get(target, attr) {
   return typeof attr === 'string'
     ? attr.split('.').reduce((accumulator, attr, index, self) => {
@@ -48,4 +50,31 @@ async function parsePreCSS(dependciesName, filePath) {
   return source;
 }
 
-export { get, set, getType, createUUID, parsePreCSS };
+function deleteDirectoryStack(directory) {
+  const stack = [directory];
+
+  while (stack.length > 0) {
+    let files = [],
+     noFile = true,
+     currentFilePath = stack[stack.length - 1]
+
+    try {
+      files = fs.readdirSync(currentFilePath);
+    } catch (error) {
+      console.error('Error reading directory: ', error);
+      continue;
+    }
+    for (let i = 0; i < files.length; i++) {
+      const filePath = path.join(currentFilePath, files[i]);
+      if (fs.lstatSync(filePath).isDirectory()) {
+        stack.push(filePath);
+        noFile = false;
+      } else {
+        fs.unlinkSync(filePath);
+      }
+    }
+    noFile && (fs.rmdirSync(currentFilePath), stack.pop());
+  }
+}
+
+export { get, set, getType, createUUID, parsePreCSS, deleteDirectoryStack };
