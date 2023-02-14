@@ -124,11 +124,7 @@ __debuger_socket.onmessage = payload => {
       } else {
         const referenceId = this.emitFile({
           type: 'asset',
-          source: `
-(function () {
-  'use strict';
-    ${code}
-})();`,
+          source: code,
           fileName: 'development.js',
         });
         manifestJSON.background = {

@@ -12,7 +12,7 @@ export default async function mixinChunksForIIFE(plugin, chunk, bundle) {
 
   // 生成新的bundle
   const { output: outputs } = await bd.generate({
-    format: 'iife',
+    format: 'iife'
   });
   // console.log(outputs);
   // 只能有唯一的输出
@@ -60,12 +60,12 @@ function replaceChunk(bundle) {
       if (chunk) {
         // remove chunk from bundle
 
-        if (
-          Object.values(bundle).find(c => c.fileName === chunk.fileName) &&
-          chunk.type !== 'asset'
-        ) {
-          delete bundle[id];
-        }
+        // if (
+        //   Object.values(bundle).find(c => c.fileName === chunk.fileName) &&
+        //   chunk.type !== 'asset'
+        // ) {
+        //   delete bundle[id];
+        // }
 
         return {
           code: chunk.code || chunk.source,
