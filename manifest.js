@@ -23,8 +23,6 @@ export class ManiFest {
   result;
   maniFestPath;
 
-  // rollup
-
   // 存储所有输出资源 HashMap
   hashTable = {};
 

@@ -60,12 +60,13 @@ function replaceChunk(bundle) {
       if (chunk) {
         // remove chunk from bundle
 
-        // if (
-        //   Object.values(bundle).find(c => c.fileName === chunk.fileName) &&
-        //   chunk.type !== 'asset'
-        // ) {
-        //   delete bundle[id];
-        // }
+        if (
+          Object.values(bundle).filter(
+            c => c.type === 'chunk' && c.imports.includes(chunk.fileName)
+          ).length < 1
+        ) {
+          delete bundle[id];
+        }
 
         return {
           code: chunk.code || chunk.source,

@@ -11,6 +11,11 @@ export default {
       file: 'dist/index.umd.js',
       format: 'umd',
       name: 'bex',
+      sourcemap: 'inline',
+      globals: {
+        vite: 'vite',
+        rollup: 'rollup',
+      },
     },
   ],
   plugins: [
@@ -20,6 +25,6 @@ export default {
     babel({
       babelHelpers: 'bundled',
       exclude: 'node_modules/',
-    }),
+    })
   ],
 };
