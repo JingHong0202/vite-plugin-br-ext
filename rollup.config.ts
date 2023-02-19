@@ -2,9 +2,10 @@ import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { babel } from '@rollup/plugin-babel';
+import sucrase from '@rollup/plugin-sucrase';
 
 export default {
-  input: 'index.js',
+  input: 'index.ts',
   external: ['rollup', 'vite'],
   output: [
     {
@@ -19,12 +20,13 @@ export default {
     },
   ],
   plugins: [
-    resolve(),
+    resolve({ extensions: ['.js', '.ts'] }),
+    sucrase({ exclude: ['node_modules/**'], transforms: ['typescript'] }),
     commonjs(),
     json(),
     babel({
       babelHelpers: 'bundled',
       exclude: 'node_modules/',
-    })
+    }),
   ],
 };

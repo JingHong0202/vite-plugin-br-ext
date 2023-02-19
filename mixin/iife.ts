@@ -1,7 +1,12 @@
 import { rollup } from 'rollup';
 import { dirname, join } from 'path';
+import { OutputChunk, PluginContext, OutputBundle, Plugin } from 'rollup';
 
-export default async function mixinChunksForIIFE(plugin, chunk, bundle) {
+export default async function mixinChunksForIIFE(
+  plugin: PluginContext,
+  chunk: OutputChunk,
+  bundle: OutputBundle
+) {
   // 使用rollup.rollup对js进行打包为iife，由于还没生成dist需要插件根据bundle获取到当前的chunk内容
   // console.log('\n', chunk.fileName);
 
@@ -12,7 +17,7 @@ export default async function mixinChunksForIIFE(plugin, chunk, bundle) {
 
   // 生成新的bundle
   const { output: outputs } = await bd.generate({
-    format: 'iife'
+    format: 'iife',
   });
   // console.log(outputs);
   // 只能有唯一的输出
@@ -35,7 +40,7 @@ export default async function mixinChunksForIIFE(plugin, chunk, bundle) {
   return plugin.getFileName(referenceId);
 }
 
-function replaceChunk(bundle) {
+function replaceChunk(bundle: OutputBundle): Plugin {
   return {
     name: 'rollup-plugin-replace-chunk',
     resolveId(source, importer) {
@@ -54,7 +59,7 @@ function replaceChunk(bundle) {
       }
     },
     load(id) {
-      const chunk = bundle[id];
+      const chunk = <OutputChunk>bundle[id];
       // console.log('\n', chunk);
 
       if (chunk) {
@@ -69,6 +74,7 @@ function replaceChunk(bundle) {
         }
 
         return {
+          //@ts-ignore
           code: chunk.code || chunk.source,
           map: chunk.map,
         };

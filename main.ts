@@ -5,9 +5,12 @@ import { normalizePath } from 'vite';
 import { ManiFest } from './manifest';
 import { isPrepCSSFile } from './utils/reg';
 import { deleteDirectoryStack } from './utils';
+import { PluginOptions } from './types/plugin';
+import { InputOptions, OutputAsset } from 'rollup';
 
-export default () => {
-  let maniFest;
+export default (): PluginOptions => {
+  let maniFest: ManiFest;
+
   const rootPath = normalizePath(cwd() + path.sep);
 
   return {
@@ -16,25 +19,25 @@ export default () => {
     config(config) {
       // default
       if (
-        !config.build.rollupOptions ||
-        !config.build.rollupOptions.input ||
-        !config.build.rollupOptions.input.includes('manifest.json')
+        config.build?.rollupOptions?.input !== 'manifest.json' ||
+        !Object.values(config.build?.rollupOptions?.input!).includes(
+          'manifest.json'
+        )
       ) {
         config.build = {
           rollupOptions: { input: path.join(cwd(), './src/manifest.json') },
         };
-        console.log(config);
+        // console.log(config);
       }
 
-
-      const outDir = config.build.outDir || 'dist'
+      const outDir = config.build.outDir || 'dist';
       if (fs.existsSync(rootPath + outDir)) {
         deleteDirectoryStack(rootPath + outDir);
       }
     },
 
-    options: async options => {
-      maniFest = new ManiFest(options);
+    options(options) {
+      maniFest = new ManiFest(<InputOptions>options);
       options.input = maniFest.inputs;
       return options;
     },
@@ -42,22 +45,22 @@ export default () => {
     async buildStart() {
       this.addWatchFile(maniFest.maniFestPath);
       maniFest.handlerResources(this);
-      return null;
     },
-  
+
     async transform(code, id) {
       if (!id.includes('node_modules')) {
-        const newCode = await maniFest.handlerDynamicInput(this, code, id);
-        return newCode;
+        return (await maniFest.handlerDynamicInput(this, code, id)) as string;
       }
+      return code;
     },
 
     outputOptions(options) {
       return {
         ...options,
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
+        chunkFileNames: '[name]-[hash].js',
+        assetFileNames: '[name]-[hash].[ext]',
         entryFileNames: '[name]-[hash].js',
+        compact: true,
       };
     },
 
@@ -68,6 +71,7 @@ export default () => {
           maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]];
         // handler HTML
         if (
+          chunk.type === 'chunk' &&
           chunk.facadeModuleId &&
           path.extname(chunk.facadeModuleId) === '.html'
         ) {
@@ -80,7 +84,7 @@ export default () => {
           const path = resource.attrPath.split('.');
           const preWorkName = path.find(current => maniFest.preWork[current]);
           // console.log(maniFest.preWork[preWorkName]);
-          resource.output = {
+          resource.output = <typeof resource.output>{
             path: preWorkName
               ? await maniFest.preWork[preWorkName](
                   this,
@@ -93,7 +97,7 @@ export default () => {
         } else if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
           // handler CSS
           resource.output = {
-            path: await maniFest.handlerCSS(this, chunk, bundle),
+            path: await maniFest.handlerCSS(this, chunk as OutputAsset, bundle),
           };
         } else if (
           chunk.type === 'chunk' &&

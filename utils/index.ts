@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-function get(target, attr) {
+function get(target: any, attr: string | number) {
   return typeof attr === 'string'
     ? attr.split('.').reduce((accumulator, attr, index, self) => {
         return accumulator[attr];
@@ -9,7 +9,7 @@ function get(target, attr) {
     : target[attr];
 }
 
-function set(target, attr, value) {
+function set(target: any, attr: string | number, value: any) {
   return typeof attr === 'string'
     ? attr.split('.').reduce((accumulator, attr, index, self) => {
         if (self.length - 1 === index) {
@@ -20,15 +20,19 @@ function set(target, attr, value) {
     : (target[attr] = value);
 }
 
-function getType(target) {
+function getType<T>(target: T) {
   return Object.prototype.toString.call(target);
 }
 
 function createUUID() {
-  return Number(Math.random().toString().substr(2)).toString(36);
+  return Number(
+    Math.random()
+      .toString()
+      .substr(2)
+  ).toString(36);
 }
 
-async function parsePreCSS(dependciesName, filePath) {
+async function parsePreCSS(dependciesName: string, filePath: string) {
   let source;
   if (dependciesName === 'scss' || dependciesName === 'sass') {
     const CSSHandler = require('sass');
@@ -50,13 +54,13 @@ async function parsePreCSS(dependciesName, filePath) {
   return source;
 }
 
-function deleteDirectoryStack(directory) {
+function deleteDirectoryStack(directory: string) {
   const stack = [directory];
 
   while (stack.length > 0) {
     let files = [],
-     noFile = true,
-     currentFilePath = stack[stack.length - 1]
+      noFile = true,
+      currentFilePath = stack[stack.length - 1];
 
     try {
       files = fs.readdirSync(currentFilePath);

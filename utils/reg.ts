@@ -5,12 +5,12 @@ const isWebResources = /web_accessible_resources\.\d{1,}\.resources/;
 const isJSFile = /\.((j)|(t))sx?/;
 const isPrepCSSFile = /\.(([ls][eca]ss)|(styl))/;
 
-const clipReg = tag =>
+const clipReg = (tag: string) =>
   new RegExp(
     `document[\\s\\n]*\.[\\s\\n]*execCommand[\\s\\n]*\\([\\s\\n]*['"][\\s\\n]*${tag}[\\s\\n]*['"][\\s\n]*\\)`
   );
 
-const PermissionNormalReg = tag => {
+const PermissionNormalReg = (tag: string) => {
   let split = tag.split('.');
   if (split.length > 1) {
     return new RegExp(
@@ -32,7 +32,7 @@ const insertCSSReg = () =>
 const annotationRows = () =>
   /((?:^|\n|\r)\s*\/\*[\s\S]*?\*\/\s*(?:\r|\n|$))|(?:^|\n|\r)\s*\/\/.*(?:\r|\n|$)/gm;
 
-const filesReg = () => /files[\s\n]*:[\s\n]*\[([\"\']?.*[\"\']?,?)*\]/
+const filesReg = () => /files[\s\n]*:[\s\n]*\[([\"\']?.*[\"\']?,?)*\]/;
 
 export {
   inputsReg,
@@ -46,5 +46,5 @@ export {
   executeScriptReg,
   insertCSSReg,
   annotationRows,
-  filesReg
+  filesReg,
 };

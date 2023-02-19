@@ -77,21 +77,25 @@ const list = [
   'webRequestBlocking',
 ];
 
-export function match(code) {
+export function match(code: string) {
   return list.reduce((accumulator, item) => {
     if (typeof item === 'string' && PermissionNormalReg(item).test(code)) {
       accumulator.push(item);
     } else if (
+      typeof item !== 'string' &&
       getType(item.features) === '[object RegExp]' &&
-      item.features.test(code)
+      (<RegExp>item.features).test(code)
     ) {
       accumulator.push(item.name);
     } else if (
+      typeof item !== 'string' &&
       getType(item.features) === '[object Array]' &&
-      item.features.map(item => item.test(code)).filter(item => item).length
+      (<RegExp[]>item.features)
+        .map(item => item.test(code))
+        .filter(item => item).length
     ) {
       accumulator.push(item.name);
     }
     return accumulator;
-  }, []);
+  }, <typeof list>[]);
 }

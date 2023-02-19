@@ -17,29 +17,30 @@ import {
 } from './utils/reg';
 import { hasMagic, sync } from 'glob';
 import iife from './mixin/iife';
+import {
+  InputOptions,
+  OutputChunk,
+  OutputAsset,
+  PluginContext,
+  OutputBundle,
+  EmittedFile,
+} from 'rollup';
+import { MatchDynamic, PreWork, Resource } from './types/plugin';
 
 export class ManiFest {
-  origin;
-  result;
-  maniFestPath;
-
+  readonly origin: any;
+  result: any;
+  maniFestPath: string = '';
   // 存储所有输出资源 HashMap
-  hashTable = {};
-
-  // 所有输出资源
-  // resources = {};
-
+  hashTable: { [key: string | number]: Resource } = {};
   // 存储动态导入资源
   dynamicImports = new Map();
-
   // 存储解析出的权限
   permission = [];
-
-  // 存储所有输入资源
-  inputs = [];
-
+  // 存储所有入口资源
+  inputs = {};
   // 写入manifest之前的处理操作，作用：对个别字段输出进行单独处理
-  preWork = {
+  preWork: PreWork = {
     service_worker: async (plugin, chunk, bundle) => {
       if (!this.result['background.type']) {
         return await iife(plugin, chunk, bundle);
@@ -64,32 +65,46 @@ export class ManiFest {
     toIIFE: iife,
   };
 
-  constructor(options) {
+  constructor(options: InputOptions) {
+    let maniFestJson;
+
     try {
-      const maniFestJson = JSON.parse(
-        fs.readFileSync(options.input, { encoding: 'utf-8' })
-      );
-      if (!maniFestJson) {
-        throw Error('mainfest.js required');
+      if (typeof options.input === 'string') {
+        maniFestJson = JSON.parse(
+          fs.readFileSync(options.input, { encoding: 'utf-8' })
+        );
+        this.maniFestPath = options.input;
+      } else if (typeof options.input === 'object') {
+        const find = Object.values(options.input).find(item =>
+          item.includes('manifest.json')
+        );
+        if (find) {
+          maniFestJson = JSON.parse(
+            fs.readFileSync(find, { encoding: 'utf-8' })
+          );
+          this.maniFestPath = find;
+        }
       }
-      this.maniFestPath = options.input;
+      if (!maniFestJson) {
+        throw Error('manifest.json required');
+      }
       this.origin = maniFestJson;
       this.result = new Proxy(maniFestJson, {
-        set,
-        get,
+        set: <ProxyHandler<typeof ManiFest>['set']>set,
+        get: <ProxyHandler<typeof ManiFest>['get']>get,
       });
       this.inputs = this.resolveInputs();
     } catch (error) {
-      throw Error(error);
+      throw Error(<string>error);
     }
     console.log('inputs', this.inputs);
   }
 
-  async handerPermission(code) {
-    this.permission = [...new Set(this.permission.concat(match(code)))];
+  async handerPermission(code: string) {
+    this.permission = [...new Set(this.permission.concat(<[]>match(code)))];
   }
 
-  async handlerDynamicInput(plugin, code, id) {
+  async handlerDynamicInput(plugin: PluginContext, code: string, id: string) {
     // 去除注释
     code = code.replace(annotationRows(), '');
     // 处理动态JS文件
@@ -100,36 +115,36 @@ export class ManiFest {
     return code;
   }
 
-  async handlerDynamicJS(plugin, code, id) {
+  async handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
     const matchAll = this.matchDynamicFilePaths(executeScriptReg(), code);
     if (!matchAll.length) return code;
     return await this.handlerMatchedPaths({
       type: 'chunk',
-      matchAll,
+      matchAll: matchAll as Required<MatchDynamic>[],
       code,
       plugin,
       id,
     });
   }
 
-  async handlerDynamicCSS(plugin, code, id) {
+  async handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {
     const matchAll = this.matchDynamicFilePaths(insertCSSReg(), code);
     if (!matchAll.length) return code;
     return await this.handlerMatchedPaths({
       type: 'asset',
       plugin,
-      matchAll,
+      matchAll: matchAll as Required<MatchDynamic>[],
       code,
       id,
     });
   }
 
-  matchDynamicFilePaths(reg, code) {
-    let reusltArr = [];
+  matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]> {
+    let reusltArr: MatchDynamic[] = [];
     for (const match of code.matchAll(reg)) {
-      const lastIndex = match.index + (match[0].length - 1);
+      const lastIndex = match.index! + (match[0].length - 1);
       reusltArr.push({
-        start: match.index,
+        start: match.index!,
         end: lastIndex,
       });
     }
@@ -159,9 +174,9 @@ export class ManiFest {
           ];
         });
         // console.log(urlMatch);
-        item.filesFieldStartIndex = filesField.index + item.start;
+        item.filesFieldStartIndex = filesField.index! + item.start;
         item.filesFieldEndIndex =
-          filesField.index + item.start + filesField[0].length;
+          filesField.index! + item.start + filesField[0].length;
         // console.log('\n',code.slice(item.filesFieldStartIndex, item.filesFieldEndIndex));
         item.files = urlMatch;
         return [item];
@@ -170,7 +185,19 @@ export class ManiFest {
     });
   }
 
-  async handlerMatchedPaths({ type, matchAll, code, plugin, id }) {
+  async handlerMatchedPaths({
+    type,
+    matchAll,
+    code,
+    plugin,
+    id,
+  }: {
+    type: 'chunk' | 'asset';
+    matchAll: Required<MatchDynamic>[];
+    code: string;
+    plugin: PluginContext;
+    id: string;
+  }) {
     let diff = 0;
     for (const iterator of matchAll) {
       const newFiles = await Promise.all(
@@ -227,7 +254,11 @@ export class ManiFest {
     return code;
   }
 
-  async handlerCSS(plugin, chunk, bundle) {
+  async handlerCSS(
+    plugin: PluginContext,
+    chunk: OutputAsset,
+    bundle: OutputBundle
+  ) {
     let dependciesName = path.extname(chunk.fileName).slice(1),
       filePath = normalizePath(
         path.join(path.dirname(this.maniFestPath), chunk.fileName)
@@ -246,7 +277,7 @@ export class ManiFest {
     }
 
     const source = await parsePreCSS(dependciesName, filePath);
-    delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)];
+    delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)!];
 
     const referenceId = plugin.emitFile({
       fileName: `${chunk.fileName.replace(
@@ -260,7 +291,7 @@ export class ManiFest {
     return plugin.getFileName(referenceId);
   }
 
-  handlerResources(plugin) {
+  handlerResources(plugin: PluginContext) {
     Object.values(this.hashTable)
       .flatMap(resource => {
         return !resource.isEntry
@@ -280,19 +311,19 @@ export class ManiFest {
       })
       .forEach(item => {
         // console.log('handlerResources:', item.fileName);
-        plugin.emitFile(item);
+        plugin.emitFile(<EmittedFile>item);
       });
   }
 
-  buildManifest(plugin) {
+  buildManifest(plugin: PluginContext) {
     Object.keys(this.hashTable).forEach(key => {
       const resource = this.hashTable[key];
       if (isWebResources.test(resource.attrPath)) return;
 
       if (resource.isEntry) {
-        this.result[resource.attrPath] = resource.output.path;
+        this.result[resource.attrPath] = resource.output!.path;
       } else if (isPrepCSSFile.test(resource.ext)) {
-        this.result[resource.attrPath] = resource.output.path;
+        this.result[resource.attrPath] = resource.output!.path;
       }
     });
     this.result.permissions = this.result.permissions
@@ -306,7 +337,7 @@ export class ManiFest {
     });
   }
 
-  traverseDeep(target, parent) {
+  traverseDeep(target: any, parent?: string) {
     for (const key in target) {
       if (!Object.hasOwnProperty.call(target, key)) continue;
 
@@ -336,7 +367,7 @@ export class ManiFest {
           continue;
         }
 
-        let resource = {};
+        let resource: Partial<Resource> = {};
 
         const keyMap = normalizePath(
           path.relative(path.dirname(this.maniFestPath), absolutePath)
@@ -355,7 +386,7 @@ export class ManiFest {
         resource.attrPath = `${parent ? `${parent}.${key}` : key}`;
         resource.keyMap = keyMap;
         resource.ext = ext;
-        this.hashTable[keyMap] = resource;
+        this.hashTable[keyMap] = <Required<Resource>>resource;
       } else if (parent && isWebResources.test(parent)) {
         // 处理有没后缀的路径
         // 是否有通配符
@@ -366,7 +397,7 @@ export class ManiFest {
     }
   }
 
-  matchFileByRules(rules, parent = '') {
+  matchFileByRules(rules: string, parent: string = '') {
     const files = sync(rules, {
       cwd: path.dirname(this.maniFestPath),
     });
@@ -378,11 +409,14 @@ export class ManiFest {
     // 遍历解析 manifest.json
     this.traverseDeep(this.origin);
     // console.log(this.hashTable);
-    return Object.entries(this.hashTable).reduce((accumulator, current) => {
-      if (current[1].isEntry) {
-        accumulator[current[1].keyMap] = current[1].absolutePath;
-      }
-      return accumulator;
-    }, {});
+    return Object.entries(this.hashTable).reduce(
+      (accumulator: { [key: string | number]: string }, current) => {
+        if (current[1].isEntry) {
+          accumulator[current[1].keyMap] = current[1].absolutePath;
+        }
+        return accumulator;
+      },
+      {}
+    );
   }
 }
