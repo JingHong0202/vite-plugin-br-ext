@@ -6,7 +6,7 @@ import sucrase from '@rollup/plugin-sucrase';
 
 export default {
   input: 'index.ts',
-  external: ['rollup', 'vite'],
+  external: ['rollup', 'vite', 'glob'],
   output: [
     {
       file: 'dist/index.umd.js',
@@ -16,6 +16,10 @@ export default {
       globals: {
         vite: 'vite',
         rollup: 'rollup',
+        path: 'path',
+        fs: 'fs',
+        process: 'process',
+        glob: 'glob',
       },
     },
   ],

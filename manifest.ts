@@ -19,13 +19,38 @@ import { hasMagic, sync } from 'glob';
 import iife from './mixin/iife';
 import {
   InputOptions,
-  OutputChunk,
   OutputAsset,
   PluginContext,
   OutputBundle,
   EmittedFile,
 } from 'rollup';
-import { MatchDynamic, PreWork, Resource } from './types/plugin';
+
+interface Resource {
+  isEntry: boolean;
+  relativePath: string;
+  absolutePath: string;
+  attrPath: string;
+  ext: string;
+  keyMap: string;
+  output?: {
+    path: string;
+  };
+}
+
+type PreWork = {
+  [key: string]: (...args: any[]) => {};
+};
+
+type MatchDynamic = {
+  start: number;
+  end: number;
+  filesFieldStartIndex?: number;
+  filesFieldEndIndex?: number;
+  files?: {
+    val: string;
+    type: string;
+  }[];
+};
 
 export class ManiFest {
   readonly origin: any;

@@ -1,14 +1,13 @@
 import path from 'path';
 import fs from 'fs';
 import { cwd } from 'process';
-import { normalizePath } from 'vite';
+import { normalizePath,Plugin } from 'vite';
 import { ManiFest } from './manifest';
 import { isPrepCSSFile } from './utils/reg';
 import { deleteDirectoryStack } from './utils';
-import { PluginOptions } from './types/plugin';
 import { InputOptions, OutputAsset } from 'rollup';
 
-export default (): PluginOptions => {
+export default (): Plugin => {
   let maniFest: ManiFest;
 
   const rootPath = normalizePath(cwd() + path.sep);

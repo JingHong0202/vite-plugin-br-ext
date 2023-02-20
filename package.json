@@ -1,11 +1,14 @@
 {
   "name": "vite-plugin-br-ext",
-  "version": "0.0.13",
+  "version": "0.0.2",
   "description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
   "main": "./dist/index.umd.js",
+  "module": "./dist/index.umd.js",
+  "types": "./types",
   "scripts": {
     "build": "rollup --c rollup.config.ts --configPlugin typescript",
-    "dev": "rollup --c rollup.config.ts --configPlugin typescript -w"
+    "dev": "rollup --c rollup.config.ts --configPlugin typescript -w",
+    "build:type": "tsc"
   },
   "repository": {
     "type": "git",
@@ -35,15 +38,14 @@
     "ts-node": "^10.9.1",
     "tslib": "^2.5.0",
     "typescript": "^4.9.5",
-    "vite": "^4.1.2"
+    "vite": "^4.1.2",
+    "@types/glob": "^8.0.1"
   },
   "files": [
-    "dist"
+    "dist",
+    "types"
   ],
   "engines": {
     "node": ">=12.0.0"
-  },
-  "devDependencies": {
-    "@types/glob": "^8.0.1"
   }
 }
