@@ -1,11 +1,13 @@
 import path from 'path';
 import fs from 'fs';
 import { cwd } from 'process';
-import { normalizePath,Plugin } from 'vite';
+import { normalizePath, Plugin } from 'vite';
 import { ManiFest } from './manifest';
 import { isPrepCSSFile } from './utils/reg';
 import { deleteDirectoryStack } from './utils';
 import { InputOptions, OutputAsset } from 'rollup';
+import { getType } from './utils';
+import log from './utils/logger';
 
 export default (): Plugin => {
   let maniFest: ManiFest;
@@ -16,20 +18,28 @@ export default (): Plugin => {
     name: 'vite-plugin-br-ext',
 
     config(config) {
-      // default
-      if (
-        config.build?.rollupOptions?.input !== 'manifest.json' ||
-        !Object.values(config.build?.rollupOptions?.input!).includes(
-          'manifest.json'
-        )
-      ) {
-        config.build = {
-          rollupOptions: { input: path.join(cwd(), './src/manifest.json') },
+      const input = config.build?.rollupOptions?.input;
+      const setDefaultVal = () => {
+        config.build!.rollupOptions = {
+          input: path.join(cwd(), './src/manifest.json'),
         };
-        // console.log(config);
+      };
+      if (!input) {
+        log.error('input must have');
+        return;
+      }
+      // has manifest.json?
+      if (
+        (getType(input!) === '[object Array]' &&
+          !Object.values(input!).includes('manifest.json')) ||
+        (getType(input!) === '[object String]' &&
+          !(<string>input).includes('manifest.json'))
+      ) {
+        setDefaultVal();
       }
 
-      const outDir = config.build.outDir || 'dist';
+      // clear outDir
+      const outDir = config.build?.outDir || 'dist';
       if (fs.existsSync(rootPath + outDir)) {
         deleteDirectoryStack(rootPath + outDir);
       }
@@ -64,7 +74,6 @@ export default (): Plugin => {
     },
 
     async generateBundle(options, bundle, isWrite) {
-      // console.log(bundle);
       for (const chunk of Object.values(bundle)) {
         const resource =
           maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]];
@@ -77,12 +86,10 @@ export default (): Plugin => {
           resource.output = {
             path: chunk.facadeModuleId.replace(rootPath, ''),
           };
-          // console.log(chunk.facadeModuleId, normalizePath(cwd()));
         } else if (resource && resource.isEntry) {
           // handler JS
           const path = resource.attrPath.split('.');
           const preWorkName = path.find(current => maniFest.preWork[current]);
-          // console.log(maniFest.preWork[preWorkName]);
           resource.output = <typeof resource.output>{
             path: preWorkName
               ? await maniFest.preWork[preWorkName](

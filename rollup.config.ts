@@ -20,6 +20,8 @@ export default {
         fs: 'fs',
         process: 'process',
         glob: 'glob',
+        os: 'os',
+        tty: 'tty'
       },
     },
   ],
