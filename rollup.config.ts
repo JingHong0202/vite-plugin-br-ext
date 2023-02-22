@@ -6,11 +6,25 @@ import sucrase from '@rollup/plugin-sucrase';
 
 export default {
   input: 'index.ts',
-  external: ['rollup', 'vite', 'glob'],
+  external: [
+    'rollup',
+    'vite',
+    'path',
+    'fs',
+    'process',
+    'os',
+    'tty',
+    'node:tty',
+    'node:process',
+    'node:os',
+    'util',
+    'events',
+    'assert',
+  ],
   output: [
     {
-      file: 'dist/index.umd.js',
-      format: 'umd',
+      file: 'dist/index.mjs',
+      format: 'es',
       name: 'bex',
       sourcemap: 'inline',
       globals: {
@@ -19,15 +33,35 @@ export default {
         path: 'path',
         fs: 'fs',
         process: 'process',
-        glob: 'glob',
+        os: 'os',
+        tty: 'tty',
+      },
+    },
+    {
+      file: 'dist/index.cjs',
+      format: 'cjs',
+      name: 'bex',
+      sourcemap: 'inline',
+      globals: {
+        vite: 'vite',
+        rollup: 'rollup',
+        path: 'path',
+        fs: 'fs',
+        process: 'process',
+        os: 'os',
+        tty: 'tty',
       },
     },
   ],
   plugins: [
-    resolve({ extensions: ['.js', '.ts'] }),
+    json(),
+    resolve({
+      extensions: ['.js', '.ts'],
+      exportConditions: ['node'], // add node option here,
+      preferBuiltins: false,
+    }),
     sucrase({ exclude: ['node_modules/**'], transforms: ['typescript'] }),
     commonjs(),
-    json(),
     babel({
       babelHelpers: 'bundled',
       exclude: 'node_modules/',

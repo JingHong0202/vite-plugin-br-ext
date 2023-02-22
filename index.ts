@@ -1,7 +1,6 @@
 import main from './main';
-// import reload from './reload';
+import reload from './reload';
 
-export default () => {
-  // return hot ? [main(), reload()] : main();
-  return  main();
+export default (hot: boolean) => {
+  return hot ? [main(), reload()] : main();
 };

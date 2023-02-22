@@ -24,6 +24,7 @@ import {
   OutputBundle,
   EmittedFile,
 } from 'rollup';
+import log from './utils/logger';
 
 interface Resource {
   isEntry: boolean;
@@ -122,7 +123,7 @@ export class ManiFest {
     } catch (error) {
       throw Error(<string>error);
     }
-    console.log('inputs', this.inputs);
+    log.primary('input: '+ JSON.stringify(this.inputs, null, 2));
   }
 
   async handerPermission(code: string) {
@@ -198,11 +199,9 @@ export class ManiFest {
               : { val: i, type: 'variable' },
           ];
         });
-        // console.log(urlMatch);
         item.filesFieldStartIndex = filesField.index! + item.start;
         item.filesFieldEndIndex =
           filesField.index! + item.start + filesField[0].length;
-        // console.log('\n',code.slice(item.filesFieldStartIndex, item.filesFieldEndIndex));
         item.files = urlMatch;
         return [item];
       }
@@ -233,7 +232,6 @@ export class ManiFest {
             const filePath = normalizePath(
               path.resolve(path.dirname(id), file.val)
             );
-            // console.log(filePath);
             if (!fs.existsSync(filePath)) {
               throw Error(`dynamic ${file.val} Not Found`);
             }
@@ -260,8 +258,6 @@ export class ManiFest {
                 fileName,
               });
             }
-            // this.dynamicImports.push(refererId);
-            // console.log(plugin.getFileName(refererId));
             return normalizePath(`/${fileName}`);
           }
         })
@@ -335,7 +331,6 @@ export class ManiFest {
           : [];
       })
       .forEach(item => {
-        // console.log('handlerResources:', item.fileName);
         plugin.emitFile(<EmittedFile>item);
       });
   }
@@ -388,7 +383,7 @@ export class ManiFest {
         );
 
         if (!fs.existsSync(absolutePath)) {
-          console.log(`${absolutePath} Not Found`);
+          log.error(`${absolutePath} Not Found`);
           continue;
         }
 
@@ -426,14 +421,12 @@ export class ManiFest {
     const files = sync(rules, {
       cwd: path.dirname(this.maniFestPath),
     });
-    // console.log(files);
     files && files.length && this.traverseDeep(files, parent);
   }
 
   resolveInputs() {
     // 遍历解析 manifest.json
     this.traverseDeep(this.origin);
-    // console.log(this.hashTable);
     return Object.entries(this.hashTable).reduce(
       (accumulator: { [key: string | number]: string }, current) => {
         if (current[1].isEntry) {
