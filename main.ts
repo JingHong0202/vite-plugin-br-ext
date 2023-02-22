@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { cwd } from 'process';
+import { cwd } from 'node:process';
 import { normalizePath, Plugin } from 'vite';
 import { ManiFest } from './manifest';
 import { isPrepCSSFile } from './utils/reg';
@@ -16,8 +16,8 @@ export default (): Plugin => {
 
   return {
     name: 'vite-plugin-br-ext',
-
     config(config) {
+      log.logger('\n' + log.packageName + log.desc(' start') + '\n');
       const input = config.build?.rollupOptions?.input;
       const setDefaultVal = () => {
         config.build!.rollupOptions = {

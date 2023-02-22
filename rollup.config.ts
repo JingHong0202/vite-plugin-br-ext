@@ -6,7 +6,21 @@ import sucrase from '@rollup/plugin-sucrase';
 
 export default {
   input: 'index.ts',
-  external: ['rollup', 'vite'],
+  external: [
+    'rollup',
+    'vite',
+    'path',
+    'fs',
+    'process',
+    'os',
+    'tty',
+    'node:tty',
+    'node:process',
+    'node:os',
+    'util',
+    'events',
+    'assert',
+  ],
   output: [
     {
       file: 'dist/index.mjs',
@@ -23,7 +37,7 @@ export default {
         tty: 'tty',
       },
     },
-     {
+    {
       file: 'dist/index.cjs',
       format: 'cjs',
       name: 'bex',
@@ -34,7 +48,6 @@ export default {
         path: 'path',
         fs: 'fs',
         process: 'process',
-        glob: 'glob',
         os: 'os',
         tty: 'tty',
       },

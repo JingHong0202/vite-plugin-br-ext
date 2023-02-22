@@ -123,7 +123,7 @@ export class ManiFest {
     } catch (error) {
       throw Error(<string>error);
     }
-    log.primary(JSON.stringify(this.inputs, null, 2));
+    log.primary('input: '+ JSON.stringify(this.inputs, null, 2));
   }
 
   async handerPermission(code: string) {
