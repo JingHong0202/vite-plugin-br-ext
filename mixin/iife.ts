@@ -9,7 +9,7 @@ export default async function mixinChunksForIIFE(
 ) {
   // 使用rollup.rollup对js进行打包为iife，由于还没生成dist需要插件根据bundle获取到当前的chunk内容
   // console.log('\n', chunk.fileName);
-
+  
   const bd = await rollup({
     input: chunk.fileName,
     plugins: [replaceChunk(bundle)],

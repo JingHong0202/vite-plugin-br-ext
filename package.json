@@ -14,7 +14,8 @@
   "scripts": {
     "build": "rollup --c rollup.config.ts --configPlugin typescript",
     "dev": "rollup --c rollup.config.ts --configPlugin typescript -w",
-    "build:type": "tsc"
+    "build:type": "tsc",
+    "lint": "eslint . --fix"
   },
   "repository": {
     "type": "git",

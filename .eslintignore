@@ -1,1 +1,5 @@
 chrome*
+rollup.config*
+tsconfig.json
+.eslint*
+types/*

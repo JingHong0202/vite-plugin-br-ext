@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
+import log from './logger';
 
 function get(target: any, attr: string | number) {
   return typeof attr === 'string'
-    ? attr.split('.').reduce((accumulator, attr, index, self) => {
+    ? attr.split('.').reduce((accumulator, attr) => {
         return accumulator[attr];
       }, target)
     : target[attr];
@@ -25,11 +26,7 @@ function getType<T>(target: T) {
 }
 
 function createUUID() {
-  return Number(
-    Math.random()
-      .toString()
-      .substr(2)
-  ).toString(36);
+  return Number(Math.random().toString().substr(2)).toString(36);
 }
 
 async function parsePreCSS(dependciesName: string, filePath: string) {
@@ -59,13 +56,13 @@ function deleteDirectoryStack(directory: string) {
 
   while (stack.length > 0) {
     let files = [],
-      noFile = true,
-      currentFilePath = stack[stack.length - 1];
+      noFile = true;
+    const currentFilePath = stack[stack.length - 1];
 
     try {
       files = fs.readdirSync(currentFilePath);
     } catch (error) {
-      console.error('Error reading directory: ', error);
+      log.error('Error reading directory: ' + String(error));
       continue;
     }
     for (let i = 0; i < files.length; i++) {

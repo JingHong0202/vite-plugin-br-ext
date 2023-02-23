@@ -25,6 +25,7 @@ import {
   EmittedFile,
 } from 'rollup';
 import log from './utils/logger';
+import { OutputChunk } from 'rollup';
 
 interface Resource {
   isEntry: boolean;
@@ -39,7 +40,7 @@ interface Resource {
 }
 
 type PreWork = {
-  [key: string]: (...args: any[]) => {};
+  [key: string]: (...args: any[]) => Promise<string>;
 };
 
 type MatchDynamic = {
@@ -69,26 +70,37 @@ export class ManiFest {
   preWork: PreWork = {
     service_worker: async (plugin, chunk, bundle) => {
       if (!this.result['background.type']) {
-        return await iife(plugin, chunk, bundle);
+        return await iife(
+          <PluginContext>plugin,
+          <OutputChunk>chunk,
+          <OutputBundle>bundle
+        );
       } else {
         return chunk.fileName;
       }
     },
     web_accessible_resources: async (plugin, chunk, bundle, self) => {
-      if (isJSFile.test(self.ext)) {
-        return await iife(plugin, chunk, bundle);
+      if (isJSFile.test(<string>self.ext)) {
+        return await iife(
+          <PluginContext>plugin,
+          <OutputChunk>chunk,
+          <OutputBundle>bundle
+        );
       } else {
         return chunk.fileName;
       }
     },
     content_scripts: async (plugin, chunk, bundle, self) => {
-      if (isJSFile.test(self.ext)) {
-        return await iife(plugin, chunk, bundle);
+      if (isJSFile.test(<string>self.ext)) {
+        return await iife(
+          <PluginContext>plugin,
+          <OutputChunk>chunk,
+          <OutputBundle>bundle
+        );
       } else {
         return chunk.fileName;
       }
     },
-    toIIFE: iife,
   };
 
   constructor(options: InputOptions) {
@@ -112,7 +124,8 @@ export class ManiFest {
         }
       }
       if (!maniFestJson) {
-        throw Error('manifest.json required');
+        log.error("'manifest.json must'");
+        throw Error('manifest.json must');
       }
       this.origin = maniFestJson;
       this.result = new Proxy(maniFestJson, {
@@ -121,30 +134,31 @@ export class ManiFest {
       });
       this.inputs = this.resolveInputs();
     } catch (error) {
+      log.error('manifest.json parse error');
       throw Error(<string>error);
     }
-    log.primary('input: '+ JSON.stringify(this.inputs, null, 2));
+    log.primary('input: ' + JSON.stringify(this.inputs, null, 2));
   }
 
-  async handerPermission(code: string) {
+  handerPermission(code: string) {
     this.permission = [...new Set(this.permission.concat(<[]>match(code)))];
   }
 
-  async handlerDynamicInput(plugin: PluginContext, code: string, id: string) {
+  handlerDynamicInput(plugin: PluginContext, code: string, id: string) {
     // 去除注释
     code = code.replace(annotationRows(), '');
     // 处理动态JS文件
-    code = await this.handlerDynamicJS(plugin, code, id);
+    code = this.handlerDynamicJS(plugin, code, id);
     // 处理动态CSS文件
-    code = await this.handlerDynamicCSS(plugin, code, id);
+    code = this.handlerDynamicCSS(plugin, code, id);
 
     return code;
   }
 
-  async handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
+  handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
     const matchAll = this.matchDynamicFilePaths(executeScriptReg(), code);
     if (!matchAll.length) return code;
-    return await this.handlerMatchedPaths({
+    return this.handlerMatchedPaths({
       type: 'chunk',
       matchAll: matchAll as Required<MatchDynamic>[],
       code,
@@ -153,10 +167,10 @@ export class ManiFest {
     });
   }
 
-  async handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {
+  handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {
     const matchAll = this.matchDynamicFilePaths(insertCSSReg(), code);
     if (!matchAll.length) return code;
-    return await this.handlerMatchedPaths({
+    return this.handlerMatchedPaths({
       type: 'asset',
       plugin,
       matchAll: matchAll as Required<MatchDynamic>[],
@@ -180,7 +194,7 @@ export class ManiFest {
 
       while (result.length) {
         ++item.end;
-        if (/[\(\{]/.test(code[item.end])) {
+        if (/[({]/.test(code[item.end])) {
           result.push(code[item.end]);
         } else if (code[item.end] === ')') {
           result.splice(result.indexOf('('), 1);
@@ -194,8 +208,8 @@ export class ManiFest {
       if (filesField) {
         const urlMatch = filesField[1].split(',').flatMap(i => {
           return [
-            /[\"\'](.+)[\"\']$/g.test(i)
-              ? { val: i.replace(/[\"\']/g, '').trim(), type: 'path' }
+            /["'](.+)["']$/g.test(i)
+              ? { val: i.replace(/["']/g, '').trim(), type: 'path' }
               : { val: i, type: 'variable' },
           ];
         });
@@ -209,7 +223,7 @@ export class ManiFest {
     });
   }
 
-  async handlerMatchedPaths({
+  handlerMatchedPaths({
     type,
     matchAll,
     code,
@@ -224,44 +238,45 @@ export class ManiFest {
   }) {
     let diff = 0;
     for (const iterator of matchAll) {
-      const newFiles = await Promise.all(
-        iterator.files.map(async file => {
-          if (file.type === 'variable') {
-            return file.val;
-          } else if (file.type === 'path') {
-            const filePath = normalizePath(
-              path.resolve(path.dirname(id), file.val)
-            );
-            if (!fs.existsSync(filePath)) {
-              throw Error(`dynamic ${file.val} Not Found`);
-            }
-
-            const fileInfo = path.parse(filePath);
-            let fileName;
-
-            if (type === 'asset') {
-              fileName = `dynamic/${createUUID()}.css`;
-              plugin.emitFile({
-                type: 'asset',
-                source: fs.readFileSync(filePath, 'utf-8'),
-                fileName,
-              });
-              this.dynamicImports.set(
-                fileName,
-                path.relative(path.dirname(this.maniFestPath), filePath)
-              );
-            } else if (type === 'chunk') {
-              fileName = `dynamic/${createUUID()}${fileInfo.ext}`;
-              plugin.emitFile({
-                id: filePath,
-                type: 'chunk',
-                fileName,
-              });
-            }
-            return normalizePath(`/${fileName}`);
+      const newFiles = iterator.files.map(file => {
+        if (file.type === 'variable') {
+          return file.val;
+        } else if (file.type === 'path') {
+          const filePath = normalizePath(
+            path.resolve(path.dirname(id), file.val)
+          );
+          if (!fs.existsSync(filePath)) {
+            log.error(`dynamic ${file.val} Not Found`);
           }
-        })
-      );
+
+          const fileInfo = path.parse(filePath);
+          let fileName: string;
+
+          if (type === 'asset') {
+            fileName = `dynamic/${createUUID()}.css`;
+            plugin.emitFile({
+              type: 'asset',
+              source: fs.readFileSync(filePath, 'utf-8'),
+              fileName,
+            });
+            this.dynamicImports.set(
+              fileName,
+              path.relative(path.dirname(this.maniFestPath), filePath)
+            );
+          } else {
+            fileName = `dynamic/${createUUID()}${fileInfo.ext.replace(
+              isJSFile,
+              '.js'
+            )}`;
+            plugin.emitFile({
+              id: filePath,
+              type: 'chunk',
+              fileName,
+            });
+          }
+          return normalizePath(`/${fileName}`);
+        }
+      });
 
       const replaceStr = code.slice(
           diff + iterator.filesFieldStartIndex,
@@ -286,7 +301,7 @@ export class ManiFest {
       );
 
     if (this.dynamicImports.has(chunk.fileName)) {
-      const hash = this.dynamicImports.get(chunk.fileName);
+      const hash: string = this.dynamicImports.get(chunk.fileName);
       filePath = normalizePath(
         path.join(path.dirname(this.maniFestPath), hash)
       );
@@ -294,7 +309,7 @@ export class ManiFest {
     }
 
     if (!fs.existsSync(filePath)) {
-      throw Error(`${filePath} Not Found`);
+      log.error(`${filePath} Not Found`);
     }
 
     const source = await parsePreCSS(dependciesName, filePath);
@@ -367,19 +382,19 @@ export class ManiFest {
         this.traverseDeep(target[key], `${parent ? `${parent}.${key}` : key}`);
       } else if (
         typeof target[key] === 'string' &&
-        !isNetWorkLink().test(target[key]) &&
-        (ext = path.extname(target[key])) &&
+        !isNetWorkLink().test(<string>target[key]) &&
+        (ext = path.extname(<string>target[key])) &&
         !includeNumber().test(ext)
       ) {
         // 处理有后缀的路径
 
         // 特例：处理 *.js *.html
-        if (hasMagic(target[key]) && parent) {
-          return this.matchFileByRules(target[key], parent);
+        if (hasMagic(<string>target[key]) && parent) {
+          return this.matchFileByRules(<string>target[key], parent);
         }
 
         const absolutePath = normalizePath(
-          path.join(path.dirname(this.maniFestPath), target[key])
+          path.join(path.dirname(this.maniFestPath), <string>target[key])
         );
 
         if (!fs.existsSync(absolutePath)) {
@@ -394,7 +409,7 @@ export class ManiFest {
         ).replace(ext, '');
 
         if (this.hashTable[keyMap]) {
-          throw Error(`file ${keyMap} repeat`);
+          log.error(`file ${keyMap} repeat`);
         }
 
         if (inputsReg.test(ext)) {
@@ -410,8 +425,8 @@ export class ManiFest {
       } else if (parent && isWebResources.test(parent)) {
         // 处理有没后缀的路径
         // 是否有通配符
-        if (hasMagic(target[key])) {
-          this.matchFileByRules(target[key], parent);
+        if (hasMagic(<string>target[key])) {
+          this.matchFileByRules(<string>target[key], parent);
         }
       }
     }

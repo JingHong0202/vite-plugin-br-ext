@@ -3,10 +3,11 @@ import fs from 'fs';
 import { cwd } from 'node:process';
 import { normalizePath, Plugin } from 'vite';
 import { ManiFest } from './manifest';
-import { isPrepCSSFile } from './utils/reg';
+import { isJSFile, isPrepCSSFile } from './utils/reg';
 import { deleteDirectoryStack } from './utils';
-import { InputOptions, OutputAsset } from 'rollup';
+import { OutputAsset } from 'rollup';
 import { getType } from './utils';
+import iife from './mixin/iife';
 import log from './utils/logger';
 
 export default (): Plugin => {
@@ -17,7 +18,7 @@ export default (): Plugin => {
   return {
     name: 'vite-plugin-br-ext',
     config(config) {
-      log.logger('\n' + log.packageName + log.desc(' start') + '\n');
+      log.logger('\n' + log.packageName + log.desc(' start....') + '\n');
       const input = config.build?.rollupOptions?.input;
       const setDefaultVal = () => {
         config.build!.rollupOptions = {
@@ -51,14 +52,14 @@ export default (): Plugin => {
       return options;
     },
 
-    async buildStart() {
+    buildStart() {
       this.addWatchFile(maniFest.maniFestPath);
       maniFest.handlerResources(this);
     },
 
-    async transform(code, id) {
+    transform(code, id) {
       if (!id.includes('node_modules')) {
-        return (await maniFest.handlerDynamicInput(this, code, id));
+        return maniFest.handlerDynamicInput(this, code, id);
       }
       return code;
     },
@@ -73,7 +74,7 @@ export default (): Plugin => {
       };
     },
 
-    async generateBundle(options, bundle, isWrite) {
+    async generateBundle(options, bundle) {
       for (const chunk of Object.values(bundle)) {
         const resource =
           maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]];
@@ -111,7 +112,9 @@ export default (): Plugin => {
           chunk.fileName.startsWith(normalizePath('dynamic/'))
         ) {
           // handler dynamicInputJSFile
-          await maniFest.preWork.toIIFE(this, chunk, bundle);
+          if (isJSFile.test(chunk.fileName)) {
+            await iife(this, chunk, bundle);
+          }
         } else if (
           chunk.type === 'asset' &&
           chunk.fileName &&
@@ -119,7 +122,6 @@ export default (): Plugin => {
           maniFest.dynamicImports.has(chunk.fileName)
         ) {
           // handler dynamicInputCSSFile
-          // chunk.fileName = maniFest.dynamicImports.get(chunk.fileName);
           await maniFest.handlerCSS(this, chunk, bundle);
         }
 

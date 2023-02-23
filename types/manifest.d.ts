@@ -11,7 +11,7 @@ interface Resource {
     };
 }
 type PreWork = {
-    [key: string]: (...args: any[]) => {};
+    [key: string]: (...args: any[]) => Promise<string>;
 };
 type MatchDynamic = {
     start: number;
@@ -35,10 +35,10 @@ export declare class ManiFest {
     inputs: {};
     preWork: PreWork;
     constructor(options: InputOptions);
-    handerPermission(code: string): Promise<void>;
-    handlerDynamicInput(plugin: PluginContext, code: string, id: string): Promise<string>;
-    handlerDynamicJS(plugin: PluginContext, code: string, id: string): Promise<string>;
-    handlerDynamicCSS(plugin: PluginContext, code: string, id: string): Promise<string>;
+    handerPermission(code: string): void;
+    handlerDynamicInput(plugin: PluginContext, code: string, id: string): string;
+    handlerDynamicJS(plugin: PluginContext, code: string, id: string): string;
+    handlerDynamicCSS(plugin: PluginContext, code: string, id: string): string;
     matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]>;
     handlerMatchedPaths({ type, matchAll, code, plugin, id, }: {
         type: 'chunk' | 'asset';
@@ -46,7 +46,7 @@ export declare class ManiFest {
         code: string;
         plugin: PluginContext;
         id: string;
-    }): Promise<string>;
+    }): string;
     handlerCSS(plugin: PluginContext, chunk: OutputAsset, bundle: OutputBundle): Promise<string>;
     handlerResources(plugin: PluginContext): void;
     buildManifest(plugin: PluginContext): void;
