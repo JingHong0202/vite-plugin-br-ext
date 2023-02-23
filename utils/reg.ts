@@ -7,11 +7,11 @@ const isPrepCSSFile = /\.(([ls][eca]ss)|(styl))/;
 
 const clipReg = (tag: string) =>
   new RegExp(
-    `document[\\s\\n]*\.[\\s\\n]*execCommand[\\s\\n]*\\([\\s\\n]*['"][\\s\\n]*${tag}[\\s\\n]*['"][\\s\n]*\\)`
+    `document[\\s\\n]*.[\\s\\n]*execCommand[\\s\\n]*\\([\\s\\n]*['"][\\s\\n]*${tag}[\\s\\n]*['"][\\s\n]*\\)`
   );
 
 const PermissionNormalReg = (tag: string) => {
-  let split = tag.split('.');
+  const split = tag.split('.');
   if (split.length > 1) {
     return new RegExp(
       `chrome[\\s\\n]*\\.${split
@@ -32,7 +32,7 @@ const insertCSSReg = () =>
 const annotationRows = () =>
   /((?:^|\n|\r)\s*\/\*[\s\S]*?\*\/\s*(?:\r|\n|$))|(?:^|\n|\r)\s*\/\/.*(?:\r|\n|$)/gm;
 
-const filesReg = () => /files[\s\n]*:[\s\n]*\[([\"\']?.*[\"\']?,?)*\]/;
+const filesReg = () => /files[\s\n]*:[\s\n]*\[(["']?.*["']?,?)*\]/;
 
 export {
   inputsReg,

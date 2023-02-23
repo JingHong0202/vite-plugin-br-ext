@@ -56,7 +56,7 @@ type MatchDynamic = {
 export class ManiFest {
   readonly origin: any;
   result: any;
-  maniFestPath: string = '';
+  maniFestPath = '';
   // 存储所有输出资源 HashMap
   hashTable: { [key: string | number]: Resource } = {};
   // 存储动态导入资源
@@ -166,7 +166,7 @@ export class ManiFest {
   }
 
   matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]> {
-    let reusltArr: MatchDynamic[] = [];
+    const reusltArr: MatchDynamic[] = [];
     for (const match of code.matchAll(reg)) {
       const lastIndex = match.index! + (match[0].length - 1);
       reusltArr.push({
@@ -176,7 +176,7 @@ export class ManiFest {
     }
 
     return reusltArr.flatMap(item => {
-      let result = ['('];
+      const result = ['('];
 
       while (result.length) {
         ++item.end;
@@ -189,7 +189,7 @@ export class ManiFest {
         }
       }
 
-      let block = code.slice(item.start, item.end + 1);
+      const block = code.slice(item.start, item.end + 1);
       const filesField = block.match(filesReg());
       if (filesField) {
         const urlMatch = filesField[1].split(',').flatMap(i => {
@@ -387,7 +387,7 @@ export class ManiFest {
           continue;
         }
 
-        let resource: Partial<Resource> = {};
+        const resource: Partial<Resource> = {};
 
         const keyMap = normalizePath(
           path.relative(path.dirname(this.maniFestPath), absolutePath)
@@ -417,7 +417,7 @@ export class ManiFest {
     }
   }
 
-  matchFileByRules(rules: string, parent: string = '') {
+  matchFileByRules(rules: string, parent = '') {
     const files = sync(rules, {
       cwd: path.dirname(this.maniFestPath),
     });

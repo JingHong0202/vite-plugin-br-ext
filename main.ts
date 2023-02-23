@@ -30,9 +30,9 @@ export default (): Plugin => {
       }
       // has manifest.json?
       if (
-        (getType(input!) === '[object Array]' &&
-          !Object.values(input!).includes('manifest.json')) ||
-        (getType(input!) === '[object String]' &&
+        (getType(input) === '[object Array]' &&
+          !Object.values(input).includes('manifest.json')) ||
+        (getType(input) === '[object String]' &&
           !(<string>input).includes('manifest.json'))
       ) {
         setDefaultVal();
@@ -46,7 +46,7 @@ export default (): Plugin => {
     },
 
     options(options) {
-      maniFest = new ManiFest(<InputOptions>options);
+      maniFest = new ManiFest(options);
       options.input = maniFest.inputs;
       return options;
     },
@@ -58,7 +58,7 @@ export default (): Plugin => {
 
     async transform(code, id) {
       if (!id.includes('node_modules')) {
-        return (await maniFest.handlerDynamicInput(this, code, id)) as string;
+        return (await maniFest.handlerDynamicInput(this, code, id));
       }
       return code;
     },
