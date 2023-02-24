@@ -20,6 +20,16 @@ export default {
     'util',
     'events',
     'assert',
+    'zlib',
+    'url',
+    'http',
+    'crypto',
+    'https',
+    'stream',
+    'tls',
+    'querystring',
+    'net',
+    'timers'
   ],
   output: [
     {

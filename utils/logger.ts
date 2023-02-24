@@ -1,5 +1,5 @@
-import chalk from 'chalk';
-import packageJSON from '../package.json';
+import chalk from 'chalk'
+import packageJSON from '../package.json'
 
 const _log = (msg: string) => console.log(`\n${msg}\n`)
 
@@ -10,4 +10,4 @@ export default {
   logger: _log,
   packageName: chalk.blueBright.bold(`${packageJSON.name} ${packageJSON.version}:`),
   desc: chalk.greenBright.bold
-};
+}

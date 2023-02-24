@@ -1,5 +1,5 @@
-import { clipReg, PermissionNormalReg } from './reg';
-import { getType } from '.';
+import { clipReg, PermissionNormalReg } from './reg'
+import { getType } from '.'
 
 const list = [
   'activeTab',
@@ -75,18 +75,18 @@ const list = [
   'webNavigation',
   'webRequest',
   'webRequestBlocking',
-];
+]
 
 export function match(code: string) {
   return list.reduce((accumulator, item) => {
     if (typeof item === 'string' && PermissionNormalReg(item).test(code)) {
-      accumulator.push(item);
+      accumulator.push(item)
     } else if (
       typeof item !== 'string' &&
       getType(item.features) === '[object RegExp]' &&
       (<RegExp>item.features).test(code)
     ) {
-      accumulator.push(item.name);
+      accumulator.push(item.name)
     } else if (
       typeof item !== 'string' &&
       getType(item.features) === '[object Array]' &&
@@ -94,8 +94,8 @@ export function match(code: string) {
         .map(item => item.test(code))
         .filter(item => item).length
     ) {
-      accumulator.push(item.name);
+      accumulator.push(item.name)
     }
-    return accumulator;
-  }, <typeof list>[]);
+    return accumulator
+  }, <typeof list>[])
 }

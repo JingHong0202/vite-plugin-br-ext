@@ -10,12 +10,14 @@
     "./esm": "./dist/index.mjs",
     "./cjs": "./dist/index.cjs"
   },
+  "type": "module",
   "types": "./types",
   "scripts": {
-    "build": "rollup --c rollup.config.ts --configPlugin typescript",
-    "dev": "rollup --c rollup.config.ts --configPlugin typescript -w",
+    "build": "rollup --configPlugin typescript -c",
+    "dev": "rollup --configPlugin typescript -c -w",
     "build:type": "tsc",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "format": "node --loader ts-node/esm .\\scripts\\format.ts"
   },
   "repository": {
     "type": "git",
@@ -52,9 +54,12 @@
     "vite": "^4.1.2"
   },
   "devDependencies": {
+    "@types/inquirer": "^9.0.3",
     "@typescript-eslint/eslint-plugin": "^5.53.0",
     "@typescript-eslint/parser": "^5.53.0",
-    "eslint": "^8.34.0"
+    "eslint": "^8.34.0",
+    "inquirer": "^9.1.4",
+    "prettier": "^2.8.4"
   },
   "files": [
     "dist",

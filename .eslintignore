@@ -2,4 +2,6 @@ chrome*
 rollup.config*
 tsconfig.json
 .eslint*
-types/*
+types
+dist
+.*

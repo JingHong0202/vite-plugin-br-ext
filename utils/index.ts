@@ -1,35 +1,35 @@
-import fs from 'fs';
-import path from 'path';
-import log from './logger';
+import fs from 'fs'
+import path from 'path'
+import log from './logger'
 
 function get(target: any, attr: string | number) {
   return typeof attr === 'string'
     ? attr.split('.').reduce((accumulator, attr) => {
-        return accumulator[attr];
+        return accumulator[attr]
       }, target)
-    : target[attr];
+    : target[attr]
 }
 
 function set(target: any, attr: string | number, value: any) {
   return typeof attr === 'string'
     ? attr.split('.').reduce((accumulator, attr, index, self) => {
         if (self.length - 1 === index) {
-          accumulator[attr] = value;
+          accumulator[attr] = value
         }
-        return accumulator[attr];
+        return accumulator[attr]
       }, target)
-    : (target[attr] = value);
+    : (target[attr] = value)
 }
 
 function getType<T>(target: T) {
-  return Object.prototype.toString.call(target);
+  return Object.prototype.toString.call(target)
 }
 
 function createUUID() {
-  return Number(Math.random().toString().substr(2)).toString(36);
+  return Number(Math.random().toString().substr(2)).toString(36)
 }
-
 async function parsePreCSS(dependciesName: string, filePath: string) {
+  /* eslint-disable */
   let source;
   if (dependciesName === 'scss' || dependciesName === 'sass') {
     const CSSHandler = require('sass');
@@ -49,33 +49,34 @@ async function parsePreCSS(dependciesName: string, filePath: string) {
     source = result;
   }
   return source;
+  /* eslint-enable */
 }
 
 function deleteDirectoryStack(directory: string) {
-  const stack = [directory];
+  const stack = [directory]
 
   while (stack.length > 0) {
     let files = [],
-      noFile = true;
-    const currentFilePath = stack[stack.length - 1];
+      noFile = true
+    const currentFilePath = stack[stack.length - 1]
 
     try {
-      files = fs.readdirSync(currentFilePath);
+      files = fs.readdirSync(currentFilePath)
     } catch (error) {
-      log.error('Error reading directory: ' + String(error));
-      continue;
+      log.error('Error reading directory: ' + String(error))
+      continue
     }
     for (let i = 0; i < files.length; i++) {
-      const filePath = path.join(currentFilePath, files[i]);
+      const filePath = path.join(currentFilePath, files[i])
       if (fs.lstatSync(filePath).isDirectory()) {
-        stack.push(filePath);
-        noFile = false;
+        stack.push(filePath)
+        noFile = false
       } else {
-        fs.unlinkSync(filePath);
+        fs.unlinkSync(filePath)
       }
     }
-    noFile && (fs.rmdirSync(currentFilePath), stack.pop());
+    noFile && (fs.rmdirSync(currentFilePath), stack.pop())
   }
 }
 
-export { get, set, getType, createUUID, parsePreCSS, deleteDirectoryStack };
+export { get, set, getType, createUUID, parsePreCSS, deleteDirectoryStack }

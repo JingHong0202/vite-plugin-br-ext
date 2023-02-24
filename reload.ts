@@ -1,4 +1,4 @@
-import { Server } from 'socket.io';
+import { Server } from 'socket.io'
 
 export default () => {
   const io = new Server(8890, {
@@ -7,12 +7,12 @@ export default () => {
       credentials: true,
       allowedHeaders: '*',
     },
-  });
+  })
   return {
     name: 'vite-plugin-br-ext-reload',
     enforce: 'post',
     closeBundle() {
-      io.emit('change');
+      io.emit('change')
     },
-  };
-};
+  }
+}
