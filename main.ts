@@ -11,127 +11,127 @@ import iife from './mixin/iife'
 import log from './utils/logger'
 
 export default (): Plugin => {
-  let maniFest: ManiFest
+	let maniFest: ManiFest
 
-  const rootPath = normalizePath(cwd() + path.sep)
+	const rootPath = normalizePath(cwd() + path.sep)
 
-  return {
-    name: 'vite-plugin-br-ext',
-    config(config) {
-      log.logger('\n' + log.packageName + log.desc(' start....') + '\n')
-      const input = config.build?.rollupOptions?.input
-      const setDefaultVal = () => {
-        config.build!.rollupOptions = {
-          input: path.join(cwd(), './src/manifest.json'),
-        }
-      }
-      if (!input) {
-        log.error('input must have')
-        return
-      }
-      // has manifest.json?
-      if (
-        (getType(input) === '[object Array]' &&
-          !Object.values(input).includes('manifest.json')) ||
-        (getType(input) === '[object String]' &&
-          !(<string>input).includes('manifest.json'))
-      ) {
-        setDefaultVal()
-      }
+	return {
+		name: 'vite-plugin-br-ext',
+		config(config) {
+			log.logger('\n' + log.packageName + log.desc(' start....') + '\n')
+			const input = config.build?.rollupOptions?.input
+			const setDefaultVal = () => {
+				config.build!.rollupOptions = {
+					input: path.join(cwd(), './src/manifest.json')
+				}
+			}
+			if (!input) {
+				log.error('input must have')
+				return
+			}
+			// has manifest.json?
+			if (
+				(getType(input) === '[object Array]' &&
+					!Object.values(input).includes('manifest.json')) ||
+				(getType(input) === '[object String]' &&
+					!(<string>input).includes('manifest.json'))
+			) {
+				setDefaultVal()
+			}
 
-      // clear outDir
-      const outDir = config.build?.outDir || 'dist'
-      if (fs.existsSync(rootPath + outDir)) {
-        deleteDirectoryStack(rootPath + outDir)
-      }
-    },
+			// clear outDir
+			const outDir = config.build?.outDir || 'dist'
+			if (fs.existsSync(rootPath + outDir)) {
+				deleteDirectoryStack(rootPath + outDir)
+			}
+		},
 
-    options(options) {
-      maniFest = new ManiFest(options)
-      options.input = maniFest.inputs
-      return options
-    },
+		options(options) {
+			maniFest = new ManiFest(options)
+			options.input = maniFest.inputs
+			return options
+		},
 
-    buildStart() {
-      this.addWatchFile(maniFest.maniFestPath)
-      maniFest.handlerResources(this)
-    },
+		buildStart() {
+			this.addWatchFile(maniFest.maniFestPath)
+			maniFest.handlerResources(this)
+		},
 
-    transform(code, id) {
-      if (!id.includes('node_modules')) {
-        return maniFest.handlerDynamicInput(this, code, id)
-      }
-      return code
-    },
+		transform(code, id) {
+			if (!id.includes('node_modules')) {
+				return maniFest.handlerDynamicInput(this, code, id)
+			}
+			return code
+		},
 
-    outputOptions(options) {
-      return {
-        ...options,
-        chunkFileNames: '[name]-[hash].js',
-        assetFileNames: '[name]-[hash].[ext]',
-        entryFileNames: '[name]-[hash].js',
-        compact: true,
-      }
-    },
+		outputOptions(options) {
+			return {
+				...options,
+				chunkFileNames: '[name]-[hash].js',
+				assetFileNames: '[name]-[hash].[ext]',
+				entryFileNames: '[name]-[hash].js',
+				compact: true
+			}
+		},
 
-    async generateBundle(options, bundle) {
-      for (const chunk of Object.values(bundle)) {
-        const resource =
-          maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]]
-        // handler HTML
-        if (
-          chunk.type === 'chunk' &&
-          chunk.facadeModuleId &&
-          path.extname(chunk.facadeModuleId) === '.html'
-        ) {
-          resource.output = {
-            path: chunk.facadeModuleId.replace(rootPath, ''),
-          }
-        } else if (resource && resource.isEntry) {
-          // handler JS
-          const path = resource.attrPath.split('.')
-          const preWorkName = path.find(current => maniFest.preWork[current])
-          resource.output = <typeof resource.output>{
-            path: preWorkName
-              ? await maniFest.preWork[preWorkName](
-                  this,
-                  chunk,
-                  bundle,
-                  resource
-                )
-              : chunk.fileName,
-          }
-        } else if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
-          // handler CSS
-          resource.output = {
-            path: await maniFest.handlerCSS(this, chunk as OutputAsset, bundle),
-          }
-        } else if (
-          chunk.type === 'chunk' &&
-          chunk.fileName &&
-          chunk.fileName.startsWith(normalizePath('dynamic/'))
-        ) {
-          // handler dynamicInputJSFile
-          if (isJSFile.test(chunk.fileName)) {
-            await iife(this, chunk, bundle)
-          }
-        } else if (
-          chunk.type === 'asset' &&
-          chunk.fileName &&
-          chunk.fileName.startsWith(normalizePath('dynamic/')) &&
-          maniFest.dynamicImports.has(chunk.fileName)
-        ) {
-          // handler dynamicInputCSSFile
-          await maniFest.handlerCSS(this, chunk, bundle)
-        }
+		async generateBundle(options, bundle) {
+			for (const chunk of Object.values(bundle)) {
+				const resource =
+					maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]]
+				// handler HTML
+				if (
+					chunk.type === 'chunk' &&
+					chunk.facadeModuleId &&
+					path.extname(chunk.facadeModuleId) === '.html'
+				) {
+					resource.output = {
+						path: chunk.facadeModuleId.replace(rootPath, '')
+					}
+				} else if (resource && resource.isEntry) {
+					// handler JS
+					const path = resource.attrPath.split('.')
+					const preWorkName = path.find(current => maniFest.preWork[current])
+					resource.output = <typeof resource.output>{
+						path: preWorkName
+							? await maniFest.preWork[preWorkName](
+									this,
+									chunk,
+									bundle,
+									resource
+							  )
+							: chunk.fileName
+					}
+				} else if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
+					// handler CSS
+					resource.output = {
+						path: await maniFest.handlerCSS(this, chunk as OutputAsset, bundle)
+					}
+				} else if (
+					chunk.type === 'chunk' &&
+					chunk.fileName &&
+					chunk.fileName.startsWith(normalizePath('dynamic/'))
+				) {
+					// handler dynamicInputJSFile
+					if (isJSFile.test(chunk.fileName)) {
+						await iife(this, chunk, bundle)
+					}
+				} else if (
+					chunk.type === 'asset' &&
+					chunk.fileName &&
+					chunk.fileName.startsWith(normalizePath('dynamic/')) &&
+					maniFest.dynamicImports.has(chunk.fileName)
+				) {
+					// handler dynamicInputCSSFile
+					await maniFest.handlerCSS(this, chunk, bundle)
+				}
 
-        // other
-        if (chunk.type === 'chunk') {
-          // 提取权限
-          if (chunk.code) maniFest.handerPermission(chunk.code)
-        }
-      }
-      maniFest.buildManifest(this)
-    },
-  }
+				// other
+				if (chunk.type === 'chunk') {
+					// 提取权限
+					if (chunk.code) maniFest.handerPermission(chunk.code)
+				}
+			}
+			maniFest.buildManifest(this)
+		}
+	}
 }

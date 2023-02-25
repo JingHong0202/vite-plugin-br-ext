@@ -1,13 +1,16 @@
 import chalk from 'chalk'
-import packageJSON from '../package.json'
+import packageJSON from '../package.json' assert { type: 'json' }
 
-const _log = (msg: string) => console.log(`\n${msg}\n`)
+const _log = (msg: string, isSpace?: boolean) =>
+	console.log(isSpace ? `\n${msg}\n` : msg)
 
 export default {
-  error: (msg: string) => _log(chalk.red.bold(msg)),
-  warning: (msg: string) => _log(chalk.yellow.bold(msg)),
-  primary: (msg: string) => _log(chalk.blue.bold(msg)),
-  logger: _log,
-  packageName: chalk.blueBright.bold(`${packageJSON.name} ${packageJSON.version}:`),
-  desc: chalk.greenBright.bold
+	error: (msg: string, space = true) => _log(chalk.red.bold(msg), space),
+	warning: (msg: string, space = true) => _log(chalk.yellow.bold(msg), space),
+	primary: (msg: string, space = true) => _log(chalk.blue.bold(msg), space),
+	logger: _log,
+	packageName: chalk.blueBright.bold(
+		`${packageJSON.name} ${packageJSON.version}:`
+	),
+	desc: chalk.greenBright.bold
 }

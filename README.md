@@ -16,10 +16,10 @@ npm install vite-plugin-br-ext -D
 > 2.1 导入 vite 插件
 
 ```js
-import bex from 'vite-plugin-br-ext';
+import bex from 'vite-plugin-br-ext'
 
 // first args: 开启插件自动重载
-plugins: [bex(true)];  
+plugins: [bex(true)]
 ```
 
 > 2.2 设置入口文件
@@ -38,24 +38,24 @@ build: {
 
 ```json
 {
-  "name": "first extension",
-  "version": "0.0.1",
-  "manifest_version": 3,
-  "description": "test extension",
-  "action": {
-    "default_popup": "./src/popup/popup.html",
-    "default_title": "Click me"
-  },
-  "background": {
-    "service_worker": "./src/index.js",
-    "type": "module"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["./asset/*"],
-      "matches": ["<all_urls>"]
-    }
-  ]
+	"name": "first extension",
+	"version": "0.0.1",
+	"manifest_version": 3,
+	"description": "test extension",
+	"action": {
+		"default_popup": "./src/popup/popup.html",
+		"default_title": "Click me"
+	},
+	"background": {
+		"service_worker": "./src/index.js",
+		"type": "module"
+	},
+	"web_accessible_resources": [
+		{
+			"resources": ["./asset/*"],
+			"matches": ["<all_urls>"]
+		}
+	]
 }
 ```
 

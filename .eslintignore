@@ -5,3 +5,4 @@ tsconfig.json
 types
 dist
 .*
+prettier*

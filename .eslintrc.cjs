@@ -6,9 +6,9 @@ module.exports = {
 	extends: [
 		'eslint:recommended',
 		'plugin:@typescript-eslint/recommended',
-		'plugin:@typescript-eslint/recommended-requiring-type-checking',
+		'plugin:@typescript-eslint/recommended-requiring-type-checking'
 	],
-  root: true,
+	root: true,
 	parser: '@typescript-eslint/parser',
 	plugins: ['@typescript-eslint'],
 	root: true,
@@ -23,6 +23,8 @@ module.exports = {
 		'@typescript-eslint/no-unsafe-member-access': 'off',
 		'@typescript-eslint/no-unsafe-return': 'off',
 		'@typescript-eslint/no-unsafe-assignment': 'off',
-		'@typescript-eslint/ban-ts-comment': 'off'
+		'@typescript-eslint/ban-ts-comment': 'off',
+		'no-mixed-spaces-and-tabs': 'off'
+		// '@typescript-eslint/no-floating-promises': 'off'
 	}
 }

@@ -8,6 +8,7 @@
 		"declaration": true /* Generates corresponding '.d.ts' file. */,
 		// "sourceMap": "true" /* Generates corresponding '.map' file. */,
 		"inlineSourceMap": true,
+		"rootDir": "./",
 		"outDir": "./dist" /* Redirect output structure to the directory. */,
 		"declarationDir": "types",
 		"emitDeclarationOnly": true,
