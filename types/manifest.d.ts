@@ -1,4 +1,14 @@
-import { InputOptions, OutputAsset, PluginContext, OutputBundle } from 'rollup'
+import type {
+	InputOptions,
+	OutputAsset,
+	PluginContext,
+	OutputBundle
+} from 'rollup'
+import type { ChunkMetadata } from 'vite'
+interface ResourceOutput {
+	path: string
+	dependencies?: ChunkMetadata
+}
 interface Resource {
 	isEntry: boolean
 	relativePath: string
@@ -6,12 +16,10 @@ interface Resource {
 	attrPath: string
 	ext: string
 	keyMap: string
-	output?: {
-		path: string
-	}
+	output?: ResourceOutput
 }
 type PreWork = {
-	[key: string]: (...args: any[]) => Promise<string>
+	[key: string]: (...args: any[]) => Promise<ResourceOutput> | ResourceOutput
 }
 type MatchDynamic = {
 	start: number
@@ -59,6 +67,7 @@ export declare class ManiFest {
 		bundle: OutputBundle
 	): Promise<string>
 	handlerResources(plugin: PluginContext): void
+	handlerDependencies(plugin: PluginContext, resource: Resource): void
 	buildManifest(plugin: PluginContext): void
 	traverseDeep(target: any, parent?: string): void
 	matchFileByRules(rules: string, parent?: string): void

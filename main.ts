@@ -1,14 +1,15 @@
 import path from 'path'
 import fs from 'fs'
 import { cwd } from 'node:process'
-import { normalizePath, Plugin } from 'vite'
+import { normalizePath } from 'vite'
 import { ManiFest } from './manifest'
 import { isJSFile, isPrepCSSFile } from './utils/reg'
 import { deleteDirectoryStack } from './utils'
-import { OutputAsset } from 'rollup'
 import { getType } from './utils'
 import iife from './mixin/iife'
 import log from './utils/logger'
+import type { OutputAsset } from 'rollup'
+import type { Plugin } from 'vite'
 
 export default (): Plugin => {
 	let maniFest: ManiFest
@@ -91,16 +92,12 @@ export default (): Plugin => {
 					// handler JS
 					const path = resource.attrPath.split('.')
 					const preWorkName = path.find(current => maniFest.preWork[current])
-					resource.output = <typeof resource.output>{
-						path: preWorkName
-							? await maniFest.preWork[preWorkName](
-									this,
-									chunk,
-									bundle,
-									resource
-							  )
-							: chunk.fileName
-					}
+					resource.output = await maniFest.preWork[preWorkName || 'default'](
+						this,
+						chunk,
+						bundle,
+						resource
+					)
 				} else if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
 					// handler CSS
 					resource.output = {

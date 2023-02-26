@@ -17,15 +17,22 @@ import {
 } from './utils/reg'
 import { hasMagic, sync } from 'glob'
 import iife from './mixin/iife'
-import {
+import log from './utils/logger'
+import type {
 	InputOptions,
 	OutputAsset,
 	PluginContext,
 	OutputBundle,
-	EmittedFile
+	EmittedFile,
+	OutputChunk,
+	RenderedChunk
 } from 'rollup'
-import log from './utils/logger'
-import { OutputChunk } from 'rollup'
+import type { ChunkMetadata } from 'vite'
+
+interface ResourceOutput {
+	path: string
+	dependencies?: ChunkMetadata
+}
 
 interface Resource {
 	isEntry: boolean
@@ -34,13 +41,11 @@ interface Resource {
 	attrPath: string
 	ext: string
 	keyMap: string
-	output?: {
-		path: string
-	}
+	output?: ResourceOutput
 }
 
 type PreWork = {
-	[key: string]: (...args: any[]) => Promise<string>
+	[key: string]: (...args: any[]) => Promise<ResourceOutput> | ResourceOutput
 }
 
 type MatchDynamic = {
@@ -70,37 +75,51 @@ export class ManiFest {
 	preWork: PreWork = {
 		service_worker: async (plugin, chunk, bundle) => {
 			if (!this.result['background.type']) {
-				return await iife(
-					<PluginContext>plugin,
-					<OutputChunk>chunk,
-					<OutputBundle>bundle
-				)
+				return {
+					path: await iife(
+						<PluginContext>plugin,
+						<OutputChunk>chunk,
+						<OutputBundle>bundle
+					)
+				}
 			} else {
-				return chunk.fileName
+				return { path: chunk.fileName }
 			}
 		},
 		web_accessible_resources: async (plugin, chunk, bundle, self) => {
 			if (isJSFile.test(<string>self.ext)) {
-				return await iife(
-					<PluginContext>plugin,
-					<OutputChunk>chunk,
-					<OutputBundle>bundle
-				)
+				return {
+					path: await iife(
+						<PluginContext>plugin,
+						<OutputChunk>chunk,
+						<OutputBundle>bundle
+					)
+				}
 			} else {
-				return chunk.fileName
+				return { path: chunk.fileName }
 			}
 		},
 		content_scripts: async (plugin, chunk, bundle, self) => {
 			if (isJSFile.test(<string>self.ext)) {
-				return await iife(
-					<PluginContext>plugin,
-					<OutputChunk>chunk,
-					<OutputBundle>bundle
-				)
+				const output: ResourceOutput = {
+					path: await iife(
+						<PluginContext>plugin,
+						<OutputChunk>chunk,
+						<OutputBundle>bundle
+					)
+				}
+				if ((<RenderedChunk>chunk).viteMetadata) {
+					const dependencies = (<RenderedChunk>chunk).viteMetadata
+					if (dependencies?.importedCss.size) {
+						output.dependencies = dependencies
+					}
+				}
+				return output
 			} else {
-				return chunk.fileName
+				return { path: chunk.fileName }
 			}
-		}
+		},
+		default: (plugin, chunk) => ({ path: chunk.fileName })
 	}
 
 	constructor(options: InputOptions) {
@@ -358,16 +377,34 @@ export class ManiFest {
 			})
 	}
 
+	handlerDependencies(plugin: PluginContext, resource: Resource) {
+		const dependencies = resource.output?.dependencies
+		if (!dependencies) return
+
+		if (
+			resource.attrPath.includes('content_scripts') &&
+			dependencies.importedCss.size
+		) {
+			// 当content_scripts 包含css依赖时，自动引入
+			const split = resource.attrPath.split('.'),
+				targetKey = `${split.slice(0, split.length - 2).join('.')}.css`,
+				newList = [...dependencies.importedCss]
+			this.result[targetKey] = this.result[targetKey]
+				? [...this.result[targetKey]].concat(newList)
+				: newList
+		}
+	}
+
 	buildManifest(plugin: PluginContext) {
 		Object.keys(this.hashTable).forEach(key => {
 			const resource = this.hashTable[key]
 			if (isWebResources.test(resource.attrPath)) return
 
-			if (resource.isEntry) {
-				this.result[resource.attrPath] = resource.output!.path
-			} else if (isPrepCSSFile.test(resource.ext)) {
+			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
 				this.result[resource.attrPath] = resource.output!.path
 			}
+
+			this.handlerDependencies(plugin, resource)
 		})
 		this.result.permissions = this.result.permissions
 			? [...new Set([...this.result.permissions, ...this.permission])]
