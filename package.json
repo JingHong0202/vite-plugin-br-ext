@@ -1,60 +1,82 @@
 {
-  "name": "vite-plugin-br-ext",
-  "version": "0.0.4",
-  "description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
-  "exports": {
-    ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    },
-    "./esm": "./dist/index.mjs",
-    "./cjs": "./dist/index.cjs"
-  },
-  "types": "./types",
-  "scripts": {
-    "build": "rollup --c rollup.config.ts --configPlugin typescript",
-    "dev": "rollup --c rollup.config.ts --configPlugin typescript -w",
-    "build:type": "tsc"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/JingHong0202/vite-plugin-browser-extension.git"
-  },
-  "keywords": [
-    "vite-plugin",
-    "rollup-plugin",
-    "manifest V3",
-    "chorme extension"
-  ],
-  "author": "jinghong",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/JingHong0202/vite-plugin-browser-extension/issues"
-  },
-  "homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme",
-  "dependencies": {
-    "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^23.0.7",
-    "@rollup/plugin-json": "^5.0.2",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "@rollup/plugin-sucrase": "^5.0.1",
-    "@rollup/plugin-typescript": "^11.0.0",
-    "@types/glob": "^8.0.1",
-    "@types/node": "^18.14.0",
-    "chalk": "^5.2.0",
-    "glob": "^8.1.0",
-    "rollup": "3.15.0",
-    "socket.io": "^4.6.1",
-    "ts-node": "^10.9.1",
-    "tslib": "^2.5.0",
-    "typescript": "^4.9.5",
-    "vite": "^4.1.2"
-  },
-  "files": [
-    "dist",
-    "types"
-  ],
-  "engines": {
-    "node": ">=12.0.0"
-  }
+	"name": "vite-plugin-br-ext",
+	"version": "0.0.4",
+	"description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs"
+		},
+		"./esm": "./dist/index.mjs",
+		"./cjs": "./dist/index.cjs"
+	},
+	"type": "module",
+	"types": "./types",
+	"scripts": {
+		"build": "rollup --configPlugin typescript -c",
+		"dev": "rollup --configPlugin typescript -c -w",
+		"build:type": "tsc",
+		"lint": "eslint . --fix",
+		"format": "NODE_OPTIONS='--experimental-json-modules' ts-node --esm --experimentalSpecifierResolution  node ./scripts/format.ts ",
+		"prepare": "husky install"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/JingHong0202/vite-plugin-browser-extension.git"
+	},
+	"keywords": [
+		"vite-plugin",
+		"rollup-plugin",
+		"manifest V3",
+		"chorme extension"
+	],
+	"author": "jinghong",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/JingHong0202/vite-plugin-browser-extension/issues"
+	},
+	"homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme",
+	"dependencies": {
+		"@rollup/plugin-babel": "^6.0.3",
+		"@rollup/plugin-commonjs": "^23.0.7",
+		"@rollup/plugin-json": "^5.0.2",
+		"@rollup/plugin-node-resolve": "^15.0.1",
+		"@rollup/plugin-sucrase": "^5.0.1",
+		"@rollup/plugin-typescript": "^11.0.0",
+		"@types/glob": "^8.0.1",
+		"@types/node": "^18.14.0",
+		"chalk": "^5.2.0",
+		"glob": "^8.1.0",
+		"rollup": "3.15.0",
+		"socket.io": "^4.6.1",
+		"ts-node": "^10.9.1",
+		"tslib": "^2.5.0",
+		"typescript": "^4.9.5",
+		"vite": "^4.1.2"
+	},
+	"devDependencies": {
+		"@types/inquirer": "^9.0.3",
+		"@typescript-eslint/eslint-plugin": "^5.53.0",
+		"@typescript-eslint/parser": "^5.53.0",
+		"eslint": "^8.34.0",
+		"husky": "^8.0.3",
+		"inquirer": "^9.1.4",
+		"lint-staged": "^13.1.2",
+		"prettier": "^2.8.4"
+	},
+	"files": [
+		"dist",
+		"types"
+	],
+	"engines": {
+		"node": ">=12.0.0"
+	},
+	"lint-staged": {
+		"!(*.d).ts": [
+			"eslint --fix --max-warnings=0"
+		],
+		"**/*": [
+			"prettier --write --ignore-unknown"
+		]
+	}
 }
