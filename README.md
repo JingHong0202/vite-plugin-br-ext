@@ -29,10 +29,10 @@ plugins: [bex(true)]
 
 > 2.2 设置入口文件
 
-```js
+```json
 build: {
   rollupOptions: {
-    input: "manifest.json“ // 路径 默认 根目录/src/manifest.json,
+    input: "manifest.json" // 路径 默认 根目录/src/manifest.json,
   }
 }
 ```
