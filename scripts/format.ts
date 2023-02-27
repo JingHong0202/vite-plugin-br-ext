@@ -30,7 +30,10 @@ execScript('npx', ['prettier', '--check', '.'])
 
 function execScript(command: string, options: string[]): Promise<void> {
 	return new Promise((resolve, reject) => {
-		const child = spawn(command, options)
+		const child = spawn(
+			/^win/.test(process.platform) ? command + '.cmd' : command,
+			options
+		)
 
 		child.stdout.on('data', (data: string) => {
 			log.primary(`${data}`.replace(space, ''), false)

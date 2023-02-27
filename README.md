@@ -18,7 +18,12 @@ npm install vite-plugin-br-ext -D
 ```js
 import bex from 'vite-plugin-br-ext'
 
-// first args: 开启插件自动重载
+/**
+ * first args: 开启插件自动重载,需安装额外安装插件辅助
+ * link: https://github.com/JingHong0202/chrome-extension-auto-reload
+ * 直接选择插件下的app文件夹加载即可
+ * tips： 需要保持重载插件和开发插件是启动状态并配合 vite build -w 命令使用
+ */
 plugins: [bex(true)]
 ```
 
@@ -27,8 +32,8 @@ plugins: [bex(true)]
 ```js
 build: {
   rollupOptions: {
-    input: "manifest.json // 路径 默认 根目录/src/manifest.json",
-  },
+    input: "manifest.json“ // 路径 默认 根目录/src/manifest.json,
+  }
 }
 ```
 
@@ -59,5 +64,24 @@ build: {
 }
 ```
 
-Bug  
-1.当 dynamic input path 不是纯字符串而是变量的时候，无法解析文件
+> Support content_scripts Usage Vue
+
+```json
+"content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "run_at": "document_start",
+      "js": ["main.js"]
+    }
+]
+```
+
+> main.js
+
+```js
+import { createApp } from 'vue'
+import App from './App.vue'
+createApp(App).mount(document.documentElement)
+```
+
+Bug 1.当 dynamic input path 不是纯字符串而是变量的时候，无法解析文件
