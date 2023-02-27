@@ -39,12 +39,7 @@ export default {
 			sourcemap: 'inline',
 			globals: {
 				vite: 'vite',
-				rollup: 'rollup',
-				path: 'path',
-				fs: 'fs',
-				process: 'process',
-				os: 'os',
-				tty: 'tty'
+				rollup: 'rollup'
 			}
 		},
 		{
@@ -54,12 +49,7 @@ export default {
 			sourcemap: 'inline',
 			globals: {
 				vite: 'vite',
-				rollup: 'rollup',
-				path: 'path',
-				fs: 'fs',
-				process: 'process',
-				os: 'os',
-				tty: 'tty'
+				rollup: 'rollup'
 			}
 		}
 	],
