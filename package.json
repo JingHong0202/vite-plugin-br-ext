@@ -17,7 +17,7 @@
 		"dev": "rollup --configPlugin typescript -c -w",
 		"build:type": "tsc",
 		"lint": "eslint . --fix",
-		"format": "NODE_OPTIONS='--experimental-json-modules' ts-node --esm --experimentalSpecifierResolution  node ./scripts/format.ts ",
+		"format": "set NODE_OPTIONS='--experimental-json-modules' && ts-node --esm --experimentalSpecifierResolution  node ./scripts/format.ts",
 		"prepare": "husky install"
 	},
 	"repository": {
