@@ -21,8 +21,8 @@
 		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
 		"removeComments": true
 	},
-	"include": ["**ts", "**/**.ts", "tests/**.ts"],
-	"exclude": ["node_modules", "*.config", "types", "dist"],
+	"include": ["**ts", "**/**.ts"],
+	"exclude": ["node_modules", "*.config", "types", "dist", "tests"],
 	"typeAcquisition": {
 		"enable": true
 	}

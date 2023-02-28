@@ -4,10 +4,10 @@ import BookMarkUtils from '../class/bookmark'
 //     send('init', res);
 //   });
 
-// chrome.tabs.onActivated.addListener(activeInfo => {
-//   chrome.scripting.executeScript({
-//     files: ['./content/inject.ts'],
-//     target: { tabId: activeInfo.tabId },
-//   });
-// });
+chrome.tabs.onActivated.addListener(activeInfo => {
+	chrome.scripting.executeScript({
+		files: ['./content/inject.ts'],
+		target: { tabId: activeInfo.tabId }
+	})
+})
 const _bookmark = new BookMarkUtils()

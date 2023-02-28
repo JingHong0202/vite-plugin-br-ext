@@ -7,4 +7,4 @@ dist
 .*
 prettier*
 *.config.*
-tests/example
+tests
