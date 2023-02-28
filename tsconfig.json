@@ -9,6 +9,7 @@
 		// "sourceMap": "true" /* Generates corresponding '.map' file. */,
 		"inlineSourceMap": true,
 		"rootDir": "./",
+		"inlineSources": true,
 		"outDir": "./dist" /* Redirect output structure to the directory. */,
 		"declarationDir": "types",
 		"emitDeclarationOnly": true,
@@ -20,8 +21,8 @@
 		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
 		"removeComments": true
 	},
-	"include": ["**ts", "**/**.ts"],
-	"exclude": ["node_modules", "rollup.config.ts", "types"],
+	"include": ["**ts", "**/**.ts", "tests/**.ts"],
+	"exclude": ["node_modules", "*.config", "types", "dist"],
 	"typeAcquisition": {
 		"enable": true
 	}

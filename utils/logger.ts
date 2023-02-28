@@ -5,7 +5,10 @@ const _log = (msg: string, isSpace?: boolean) =>
 	console.log(isSpace ? `\n${msg}\n` : msg)
 
 export default {
-	error: (msg: string, space = true) => _log(chalk.red.bold(msg), space),
+	error: (msg: string, space = true) => {
+		_log(chalk.red.bold(msg), space)
+		throw Error(msg)
+	},
 	warning: (msg: string, space = true) => _log(chalk.yellow.bold(msg), space),
 	primary: (msg: string, space = true) => _log(chalk.blue.bold(msg), space),
 	logger: _log,
