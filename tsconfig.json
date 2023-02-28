@@ -9,6 +9,7 @@
 		// "sourceMap": "true" /* Generates corresponding '.map' file. */,
 		"inlineSourceMap": true,
 		"rootDir": "./",
+		"inlineSources": true,
 		"outDir": "./dist" /* Redirect output structure to the directory. */,
 		"declarationDir": "types",
 		"emitDeclarationOnly": true,
@@ -21,7 +22,7 @@
 		"removeComments": true
 	},
 	"include": ["**ts", "**/**.ts"],
-	"exclude": ["node_modules", "rollup.config.ts", "types"],
+	"exclude": ["node_modules", "*.config", "types", "dist", "tests"],
 	"typeAcquisition": {
 		"enable": true
 	}

@@ -6,3 +6,5 @@ types
 dist
 .*
 prettier*
+*.config.*
+tests

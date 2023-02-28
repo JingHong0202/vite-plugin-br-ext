@@ -147,8 +147,7 @@ export class ManiFest {
 				}
 			}
 			if (!maniFestJson) {
-				log.error("'manifest.json must'")
-				throw Error('manifest.json must')
+				log.error('manifest.json must')
 			}
 			this.origin = maniFestJson
 			this.result = new Proxy(maniFestJson, {
@@ -157,8 +156,7 @@ export class ManiFest {
 			})
 			this.inputs = this.resolveInputs()
 		} catch (error) {
-			log.error('manifest.json parse error')
-			throw Error(<string>error)
+			log.error(<string>error || 'manifest.json parse error')
 		}
 		log.primary('input: ' + JSON.stringify(this.inputs, null, 2))
 	}

@@ -21,11 +21,6 @@ export default (): Plugin => {
 		config(config) {
 			log.logger('\n' + log.packageName + log.desc(' start....') + '\n')
 			const input = config.build?.rollupOptions?.input
-			const setDefaultVal = () => {
-				config.build!.rollupOptions = {
-					input: path.join(cwd(), './src/manifest.json')
-				}
-			}
 			if (!input) {
 				log.error('input must have')
 				return
@@ -37,7 +32,9 @@ export default (): Plugin => {
 				(getType(input) === '[object String]' &&
 					!(<string>input).includes('manifest.json'))
 			) {
-				setDefaultVal()
+				config.build!.rollupOptions = {
+					input: path.join(cwd(), './src/manifest.json')
+				}
 			}
 
 			// clear outDir
