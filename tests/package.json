@@ -2,6 +2,7 @@
 	"name": "vite-plugin-br-ext-tests",
 	"private": true,
 	"devDependencies": {
-		"vite-plugin-br-ext": "workspace:*"
+		"vite-plugin-br-ext": "workspace:*",
+		"@vitejs/plugin-vue": "^2.3.3"
 	}
 }

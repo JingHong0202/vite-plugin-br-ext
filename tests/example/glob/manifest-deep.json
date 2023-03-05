@@ -1,0 +1,14 @@
+{
+	"name": "Bookmark Index",
+	"version": "0.0.1",
+	"description": "游览器书签加强插件",
+	"manifest_version": 3,
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"run_at": "document_start",
+			"js": ["js/**"],
+			"css": ["css/**"]
+		}
+	]
+}

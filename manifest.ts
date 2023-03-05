@@ -41,6 +41,7 @@ interface Resource {
 	attrPath: string
 	ext: string
 	keyMap: string
+	group?: string
 	output?: ResourceOutput
 }
 
@@ -135,7 +136,7 @@ export class ManiFest {
 				this.maniFestPath = options.input
 			} else if (typeof options.input === 'object') {
 				const find = Object.values(options.input).find(item =>
-					item.includes('manifest.json')
+					item.includes('manifest')
 				)
 				if (find) {
 					maniFestJson = JSON.parse(
@@ -393,7 +394,24 @@ export class ManiFest {
 		}
 	}
 
+	// handlerGroup() {
+	// 	Object.keys(this.hashTable).reduce((accumulator, current) => {
+	// 		if (this.hashTable[current].group) {
+	// 			!this.hashTable[this.hashTable[current].group!]
+	// 				? (this.hashTable[this.hashTable[current].group!] = [
+	// 						this.hashTable[current]
+	// 				  ])
+	// 				: this.hashTable[this.hashTable[current].group!].push(
+	// 						this.hashTable[current]
+	// 				  )
+	// 			delete this.hashTable[current]
+	// 		}
+	// 		return accumulator
+	// 	})
+	// }
+
 	buildManifest(plugin: PluginContext) {
+		// this.handlerGroup()
 		Object.keys(this.hashTable).forEach(key => {
 			const resource = this.hashTable[key]
 			if (isWebResources.test(resource.attrPath)) return
@@ -415,7 +433,7 @@ export class ManiFest {
 		})
 	}
 
-	traverseDeep(target: any, parent?: string) {
+	traverseDeep(target: any, parent?: string, group?: string) {
 		for (const key in target) {
 			if (!Object.hasOwnProperty.call(target, key)) continue
 
@@ -464,8 +482,9 @@ export class ManiFest {
 				resource.attrPath = `${parent ? `${parent}.${key}` : key}`
 				resource.keyMap = keyMap
 				resource.ext = ext
+				group && (resource.group = group)
 				this.hashTable[keyMap] = <Required<Resource>>resource
-			} else if (parent && isWebResources.test(parent)) {
+			} else if (parent) {
 				// 处理有没后缀的路径
 				// 是否有通配符
 				if (hasMagic(<string>target[key])) {
@@ -477,9 +496,10 @@ export class ManiFest {
 
 	matchFileByRules(rules: string, parent = '') {
 		const files = sync(rules, {
-			cwd: path.dirname(this.maniFestPath)
+			cwd: path.dirname(this.maniFestPath),
+			nodir: true
 		})
-		files && files.length && this.traverseDeep(files, parent)
+		files?.length && this.traverseDeep(files, parent, rules)
 	}
 
 	resolveInputs() {

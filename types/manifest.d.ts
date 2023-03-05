@@ -16,6 +16,7 @@ interface Resource {
 	attrPath: string
 	ext: string
 	keyMap: string
+	group?: string
 	output?: ResourceOutput
 }
 type PreWork = {
@@ -69,7 +70,7 @@ export declare class ManiFest {
 	handlerResources(plugin: PluginContext): void
 	handlerDependencies(plugin: PluginContext, resource: Resource): void
 	buildManifest(plugin: PluginContext): void
-	traverseDeep(target: any, parent?: string): void
+	traverseDeep(target: any, parent?: string, group?: string): void
 	matchFileByRules(rules: string, parent?: string): void
 	resolveInputs(): {
 		[key: string]: string

@@ -28,9 +28,9 @@ export default (): Plugin => {
 			// has manifest.json?
 			if (
 				(getType(input) === '[object Array]' &&
-					!Object.values(input).includes('manifest.json')) ||
+					!Object.values(input).includes('manifest')) ||
 				(getType(input) === '[object String]' &&
-					!(<string>input).includes('manifest.json'))
+					!(<string>input).includes('manifest'))
 			) {
 				config.build!.rollupOptions = {
 					input: path.join(cwd(), './src/manifest.json')
