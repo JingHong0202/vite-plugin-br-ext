@@ -424,17 +424,17 @@ export class ManiFest {
 			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
 				this.result[resource.attrPath] = resource.output!.path
 			}
-			// if (hasMagic(key)) {
-			// 	const list = this.result[resource.attrPath] as []
-			// 	const index = list.findIndex(item => item === key)
-			// 	if (index !== -1) {
-			// 		const left = list.slice(0, index),
-			// 			right = list.slice(Math.max(index, 1))
-			// 		this.result[resource.attrPath] = left
-			// 			.concat(resource.group)
-			// 			.concat(right)
-			// 	}
-			// }
+			if (hasMagic(key)) {
+				const list = this.result[resource.attrPath] as []
+				const index = list.findIndex(item => item === key)
+				if (index !== -1) {
+					const left = list.slice(0, index),
+						right = list.slice(Math.max(index, 1))
+					this.result[resource.attrPath] = left
+						.concat(resource.group.map(item => item.output?.path || item.relativePath))
+						.concat(right)
+				}
+			}
 			this.handlerDependencies(plugin, resource)
 		})
 		this.result.permissions = this.result.permissions

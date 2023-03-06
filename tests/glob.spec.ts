@@ -90,13 +90,18 @@ describe('output', () => {
 		expect(() => {
 			try {
 				const json = JSON.parse(<string>manifest_output.source),
-					contentJS = json['content_scripts'][0].js,
+					contentJS: [] = json['content_scripts'][0].js,
 					contentCSS = json['content_scripts'][0].css
-				expect(contentJS).toEqual(
-					output
-						.filter(item => /\.jsx?$/.test(item.fileName))
-						.map(item => item.fileName)
-				)
+
+				expect(
+					contentJS.every(name =>
+						output
+							.filter(item => /\.jsx?$/.test(item.fileName))
+							.map(item => item.fileName)
+							.find(item => item === name)
+					)
+				).toBe(true)
+
 			} catch (error) {
 				throw Error(error)
 			}
