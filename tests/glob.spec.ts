@@ -31,14 +31,14 @@ describe('match', () => {
 			input: resolve(__dirname, './example/glob/manifest-deep.json')
 		}
 		let manifest: ManiFest = new ManiFest(options)
-		expect(Object.values(manifest.hashTable)).toHaveLength(4)
+		expect(Object.values(manifest.hashTable)).toHaveLength(5)
 		expect(() => {
 			Object.values(manifest.hashTable).forEach(item => {
 				if (!existsSync(item.absolutePath))
 					throw Error(`${item.absolutePath} Not Found`)
 			})
 		}).not.toThrowError()
-		expect(Object.values(manifest.inputs)).toHaveLength(3)
+		expect(Object.values(manifest.inputs)).toHaveLength(4)
 		console.log(manifest)
 	})
 })

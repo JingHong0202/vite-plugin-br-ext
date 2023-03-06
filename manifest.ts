@@ -394,24 +394,29 @@ export class ManiFest {
 		}
 	}
 
-	// handlerGroup() {
-	// 	Object.keys(this.hashTable).reduce((accumulator, current) => {
-	// 		if (this.hashTable[current].group) {
-	// 			!this.hashTable[this.hashTable[current].group!]
-	// 				? (this.hashTable[this.hashTable[current].group!] = [
-	// 						this.hashTable[current]
-	// 				  ])
-	// 				: this.hashTable[this.hashTable[current].group!].push(
-	// 						this.hashTable[current]
-	// 				  )
-	// 			delete this.hashTable[current]
-	// 		}
-	// 		return accumulator
-	// 	})
-	// }
+	handlerGroup() {
+		const keys = Object.keys(this.hashTable)
+		for (let index = 0; index < keys.length; index++) {
+			const current = this.hashTable[keys[index]]
+			if (current.group) {
+				!this.hashTable[current.group]
+					? (this.hashTable[current.group] = {
+							// @ts-ignore
+							group: [current],
+							attrPath: current.attrPath
+								.split('.')
+								.slice(0, current.attrPath.split('.').length - 1)
+								.join('.')
+					  })
+					: // @ts-ignore
+					  (this.hashTable[current.group].group as []).push(current)
+				delete this.hashTable[keys[index]]
+			}
+		}
+	}
 
 	buildManifest(plugin: PluginContext) {
-		// this.handlerGroup()
+		this.handlerGroup()
 		Object.keys(this.hashTable).forEach(key => {
 			const resource = this.hashTable[key]
 			if (isWebResources.test(resource.attrPath)) return
@@ -419,7 +424,17 @@ export class ManiFest {
 			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
 				this.result[resource.attrPath] = resource.output!.path
 			}
-
+			// if (hasMagic(key)) {
+			// 	const list = this.result[resource.attrPath] as []
+			// 	const index = list.findIndex(item => item === key)
+			// 	if (index !== -1) {
+			// 		const left = list.slice(0, index),
+			// 			right = list.slice(Math.max(index, 1))
+			// 		this.result[resource.attrPath] = left
+			// 			.concat(resource.group)
+			// 			.concat(right)
+			// 	}
+			// }
 			this.handlerDependencies(plugin, resource)
 		})
 		this.result.permissions = this.result.permissions

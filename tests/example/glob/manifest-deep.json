@@ -7,7 +7,7 @@
 		{
 			"matches": ["<all_urls>"],
 			"run_at": "document_start",
-			"js": ["js/**"],
+			"js": ["js/**", "./content/js-4.js"],
 			"css": ["css/**"]
 		}
 	]
