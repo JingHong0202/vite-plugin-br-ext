@@ -81,4 +81,17 @@ function deleteDirectoryStack(directory: string) {
 	}
 }
 
-export { get, set, getType, createUUID, parsePreCSS, deleteDirectoryStack }
+function prevPath(attrPath: string, deep: number) {
+	const split = attrPath.split('.')
+	return split.slice(0, split.length - deep).join('.')
+}
+
+export {
+	prevPath,
+	get,
+	set,
+	getType,
+	createUUID,
+	parsePreCSS,
+	deleteDirectoryStack
+}

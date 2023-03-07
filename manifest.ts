@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import { normalizePath } from 'vite'
-import { set, get, getType, createUUID, parsePreCSS } from './utils'
+import { set, get, getType, createUUID, parsePreCSS, prevPath } from './utils'
 import { match } from './utils/permission'
 import {
 	inputsReg,
@@ -43,6 +43,11 @@ interface Resource {
 	keyMap: string
 	group?: string
 	output?: ResourceOutput
+}
+
+interface ResourceGroup {
+	attrPath: string
+	group: Resource[]
 }
 
 type PreWork = {
@@ -395,24 +400,36 @@ export class ManiFest {
 	}
 
 	handlerGroup() {
-		const keys = Object.keys(this.hashTable)
+		const keys = Object.keys(this.hashTable),
+			groupHash = <Map<string, ResourceGroup>>new Map()
 		for (let index = 0; index < keys.length; index++) {
 			const current = this.hashTable[keys[index]]
-			if (current.group) {
-				!this.hashTable[current.group]
-					? (this.hashTable[current.group] = {
-							// @ts-ignore
-							group: [current],
-							attrPath: current.attrPath
-								.split('.')
-								.slice(0, current.attrPath.split('.').length - 1)
-								.join('.')
-					  })
-					: // @ts-ignore
-					  (this.hashTable[current.group].group as []).push(current)
-				delete this.hashTable[keys[index]]
+			if (!current.group) continue
+			if (!groupHash.has(current.group)) {
+				groupHash.set(current.group, {
+					group: [current],
+					attrPath: prevPath(current.attrPath, 1)
+				})
+			} else {
+				groupHash.get(current.group)?.group.push(current)
 			}
+			delete this.hashTable[keys[index]]
 		}
+
+		if (!groupHash.size) return
+		;[...groupHash].forEach(([key, resource]) => {
+			const list = <[]>this.result[resource.attrPath]
+			const index = list.findIndex(item => item === key)
+			if (index !== -1) {
+				const left = list.slice(0, index),
+					right = list.slice(Math.max(index, 1))
+				this.result[resource.attrPath] = [
+					...left,
+					...resource.group.map(item => item.output?.path || item.relativePath),
+					...right
+				]
+			}
+		})
 	}
 
 	buildManifest(plugin: PluginContext) {
@@ -422,17 +439,11 @@ export class ManiFest {
 			if (isWebResources.test(resource.attrPath)) return
 
 			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
-				this.result[resource.attrPath] = resource.output!.path
-			}
-			if (hasMagic(key)) {
-				const list = this.result[resource.attrPath] as []
-				const index = list.findIndex(item => item === key)
-				if (index !== -1) {
-					const left = list.slice(0, index),
-						right = list.slice(Math.max(index, 1))
-					this.result[resource.attrPath] = left
-						.concat(resource.group.map(item => item.output?.path || item.relativePath))
-						.concat(right)
+				const parentPath = prevPath(resource.attrPath, 1)
+				if (getType(this.result[parentPath]) === '[object Array]') {
+					(<string[]>this.result[parentPath]).push(resource.output!.path)
+				} else {
+					this.result[resource.attrPath] = resource.output!.path
 				}
 			}
 			this.handlerDependencies(plugin, resource)
