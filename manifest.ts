@@ -390,12 +390,13 @@ export class ManiFest {
 			dependencies.importedCss.size
 		) {
 			// 当content_scripts 包含css依赖时，自动引入
-			const split = resource.attrPath.split('.'),
-				targetKey = `${split.slice(0, split.length - 2).join('.')}.css`,
+			const targetKey = `${prevPath(resource.attrPath, 2)}.css`,
 				newList = [...dependencies.importedCss]
-			this.result[targetKey] = this.result[targetKey]
-				? [...this.result[targetKey]].concat(newList)
-				: newList
+
+			this.result[targetKey] =
+				getType(this.result[targetKey]) === '[object Array]'
+					? (<string[]>this.result[targetKey]).concat(newList)
+					: newList
 		}
 	}
 
@@ -418,11 +419,12 @@ export class ManiFest {
 
 		if (!groupHash.size) return
 		;[...groupHash].forEach(([key, resource]) => {
+			if (isWebResources.test(resource.attrPath)) return
 			const list = <[]>this.result[resource.attrPath]
 			const index = list.findIndex(item => item === key)
 			if (index !== -1) {
 				const left = list.slice(0, index),
-					right = list.slice(Math.max(index, 1))
+					right = list.slice(index + 1)
 				this.result[resource.attrPath] = [
 					...left,
 					...resource.group.map(item => item.output?.path || item.relativePath),
@@ -439,9 +441,14 @@ export class ManiFest {
 			if (isWebResources.test(resource.attrPath)) return
 
 			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
-				const parentPath = prevPath(resource.attrPath, 1)
-				if (getType(this.result[parentPath]) === '[object Array]') {
-					(<string[]>this.result[parentPath]).push(resource.output!.path)
+				const parentPath = prevPath(resource.attrPath, 1),
+					parent = this.result[parentPath]
+				if (getType(parent) === '[object Array]') {
+					const oldIndex = (<string[]>parent).findIndex(
+						item => item === resource.relativePath
+					)
+					oldIndex !== -1 && (<string[]>parent).splice(oldIndex, 1)
+					;(<string[]>parent).push(resource.output!.path)
 				} else {
 					this.result[resource.attrPath] = resource.output!.path
 				}
@@ -471,15 +478,10 @@ export class ManiFest {
 				typeof target[key] === 'string' &&
 				!isNetWorkLink().test(<string>target[key]) &&
 				(ext = path.extname(<string>target[key])) &&
-				!includeNumber().test(ext)
+				!includeNumber().test(ext) &&
+				!hasMagic(<string>target[key])
 			) {
 				// 处理有后缀的路径
-
-				// 特例：处理 *.js *.html
-				if (hasMagic(<string>target[key]) && parent) {
-					return this.matchFileByRules(<string>target[key], parent)
-				}
-
 				const absolutePath = normalizePath(
 					path.join(path.dirname(this.maniFestPath), <string>target[key])
 				)
@@ -510,12 +512,9 @@ export class ManiFest {
 				resource.ext = ext
 				group && (resource.group = group)
 				this.hashTable[keyMap] = <Required<Resource>>resource
-			} else if (parent) {
-				// 处理有没后缀的路径
-				// 是否有通配符
-				if (hasMagic(<string>target[key])) {
-					this.matchFileByRules(<string>target[key], parent)
-				}
+			} else if (parent && hasMagic(<string>target[key])) {
+				// 处理有通配符的路径
+				this.matchFileByRules(<string>target[key], parent)
 			}
 		}
 	}

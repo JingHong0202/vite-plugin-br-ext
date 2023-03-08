@@ -68,6 +68,61 @@ describe('output', () => {
 		}).not.toThrowError()
 	})
 
+	test('web_resource', async () => {
+		const root = path.resolve(__dirname, './example/glob')
+
+		const { output } = <RollupOutput>await build({
+			root: root,
+			base: './example/glob',
+			// @ts-ignore
+			plugins: [vue(), bex()],
+			build: {
+				rollupOptions: {
+					input: `${root}/manifest-web-resource.json`
+				}
+			}
+		})
+		const manifest_output = <OutputAsset>(
+			output.find(item => item.fileName === 'manifest.json')
+		)
+		expect(manifest_output).not.toBeUndefined()
+
+		expect(() => {
+			try {
+				const json = JSON.parse(<string>manifest_output.source),
+					web_resources: string[] =
+						json['web_accessible_resources'][0].resources,
+					contentJS: string[] = json['content_scripts'][0].js
+
+				expect(
+					contentJS.every(name =>
+						output
+							.filter(item => /\.jsx?$/.test(item.fileName))
+							.map(item => item.fileName)
+							.find(item => item === name)
+					)
+				).toBe(true)
+				expect(json['content_scripts'][0].css).toBeUndefined()
+
+				expect(web_resources.slice(0, 2)).toEqual([
+					'web_resource/js/*',
+					'web_resource/css/*'
+				])
+				;(['web_resource/js', 'web_resource/css'] as string[]).forEach(str => {
+					const filter = output.filter(item => item.fileName.includes(str))
+					filter.forEach(item => {
+						if (!existsSync(item.fileName))
+							throw Error(`${item.fileName} Not Found`)
+					})
+				})
+
+				expect(web_resources.slice(2)).toEqual(['css/style-1.css'])
+			} catch (error) {
+				throw Error(error)
+			}
+		}).not.toThrowError()
+	})
+
 	test('manifest format lint', async () => {
 		const root = path.resolve(__dirname, './example/glob')
 
@@ -90,8 +145,8 @@ describe('output', () => {
 		expect(() => {
 			try {
 				const json = JSON.parse(<string>manifest_output.source),
-					contentJS: [] = json['content_scripts'][0].js,
-					contentCSS = json['content_scripts'][0].css
+					contentJS: string[] = json['content_scripts'][0].js,
+					contentCSS: string[] = json['content_scripts'][0].css
 
 				expect(
 					contentJS.every(name =>
@@ -101,7 +156,14 @@ describe('output', () => {
 							.find(item => item === name)
 					)
 				).toBe(true)
-
+				expect(
+					contentCSS.every(name =>
+						output
+							.filter(item => /\.css$/.test(item.fileName))
+							.map(item => item.fileName)
+							.find(item => item === name)
+					)
+				).toBe(true)
 			} catch (error) {
 				throw Error(error)
 			}

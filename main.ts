@@ -13,9 +13,7 @@ import type { Plugin } from 'vite'
 
 export default (): Plugin => {
 	let maniFest: ManiFest
-
 	const rootPath = normalizePath(cwd() + path.sep)
-
 	return {
 		name: 'vite-plugin-br-ext',
 		config(config) {
@@ -76,16 +74,16 @@ export default (): Plugin => {
 			for (const chunk of Object.values(bundle)) {
 				const resource =
 					maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]]
-				// handler HTML
 				if (
 					chunk.type === 'chunk' &&
 					chunk.facadeModuleId &&
 					path.extname(chunk.facadeModuleId) === '.html'
 				) {
+					// handler HTML
 					resource.output = {
 						path: chunk.facadeModuleId.replace(rootPath, '')
 					}
-				} else if (resource && resource.isEntry) {
+				} else if (resource?.isEntry) {
 					// handler JS
 					const path = resource.attrPath.split('.')
 					const preWorkName = path.find(current => maniFest.preWork[current])
