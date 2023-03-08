@@ -7,4 +7,13 @@ declare function parsePreCSS(
 	filePath: string
 ): Promise<any>
 declare function deleteDirectoryStack(directory: string): void
-export { get, set, getType, createUUID, parsePreCSS, deleteDirectoryStack }
+declare function prevPath(attrPath: string, deep: number): string
+export {
+	prevPath,
+	get,
+	set,
+	getType,
+	createUUID,
+	parsePreCSS,
+	deleteDirectoryStack
+}

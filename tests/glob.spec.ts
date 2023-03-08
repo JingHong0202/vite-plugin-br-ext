@@ -111,7 +111,14 @@ describe('output', () => {
 				;(['web_resource/js', 'web_resource/css'] as string[]).forEach(str => {
 					const filter = output.filter(item => item.fileName.includes(str))
 					filter.forEach(item => {
-						if (!existsSync(item.fileName))
+						if (
+							!existsSync(
+								path.resolve(
+									path.normalize(__dirname + '/example/glob/dist/'),
+									item.fileName
+								)
+							)
+						)
 							throw Error(`${item.fileName} Not Found`)
 					})
 				})

@@ -19,7 +19,7 @@
 		"lint": "eslint . --fix",
 		"test": "vitest --config tests/example/demo/vite.config.ts",
 		"format": "set NODE_OPTIONS='--experimental-json-modules' && ts-node --esm --experimentalSpecifierResolution  node ./scripts/format.ts",
-		"prepare": "husky install"
+		"prepare": "husky install && chmod ug+x .husky/*"
 	},
 	"repository": {
 		"type": "git",
