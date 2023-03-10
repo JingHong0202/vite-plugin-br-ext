@@ -17,9 +17,9 @@
 		"dev": "rollup --configPlugin typescript -c -w",
 		"build:type": "tsc",
 		"lint": "eslint . --fix",
-		"test": "vitest --config tests/example/demo/vite.config.ts",
+		"test": "vitest run",
 		"format": "set NODE_OPTIONS='--experimental-json-modules' && ts-node --esm --experimentalSpecifierResolution  node ./scripts/format.ts",
-		"prepare": "husky install && chmod ug+x .husky/*"
+		"prepare": "husky install"
 	},
 	"repository": {
 		"type": "git",

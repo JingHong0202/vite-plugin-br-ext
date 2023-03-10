@@ -445,7 +445,7 @@ export class ManiFest {
 					parent = this.result[parentPath]
 				if (getType(parent) === '[object Array]') {
 					const oldIndex = (<string[]>parent).findIndex(
-						item => item === resource.relativePath
+						item => normalizePath(item) === resource.relativePath
 					)
 					oldIndex !== -1 && (<string[]>parent).splice(oldIndex, 1)
 					;(<string[]>parent).push(resource.output!.path)
@@ -505,7 +505,7 @@ export class ManiFest {
 					resource.isEntry = true
 				}
 
-				resource.relativePath = target[key]
+				resource.relativePath = normalizePath(<string>target[key])
 				resource.absolutePath = absolutePath
 				resource.attrPath = `${parent ? `${parent}.${key}` : key}`
 				resource.keyMap = keyMap
