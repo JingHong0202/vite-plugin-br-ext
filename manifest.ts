@@ -15,7 +15,7 @@ import {
 	insertCSSReg,
 	filesReg
 } from './utils/reg'
-import { hasMagic, sync } from 'glob'
+import { hasMagic, globSync as sync } from 'glob'
 import iife from './mixin/iife'
 import log from './utils/logger'
 import type {

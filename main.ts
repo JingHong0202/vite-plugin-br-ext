@@ -37,8 +37,8 @@ export default (): Plugin => {
 
 			// clear outDir
 			const outDir = config.build?.outDir || 'dist'
-			if (fs.existsSync(rootPath + outDir)) {
-				deleteDirectoryStack(rootPath + outDir)
+			if (fs.existsSync((config.root || rootPath) + outDir)) {
+				deleteDirectoryStack((config.root || rootPath) + outDir)
 			}
 		},
 

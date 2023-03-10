@@ -26,7 +26,10 @@ describe('Chrome V3 Normalize Lint', () => {
 			const manifest_output = output.find(
 				item => item.fileName === 'manifest.json'
 			)
+			const dynamic = output.find(item => item.fileName.includes('dynamic'))
+
 			if (!manifest_output) throw Error('Not Found manifest.json')
+			if (!dynamic) throw Error('Not Found dynamic file')
 			try {
 				// @ts-ignore
 				const json = JSON.parse(manifest_output.source)
@@ -47,7 +50,11 @@ describe('Chrome V3 Normalize Lint', () => {
 					if (!lintFileList[key]) {
 						throw Error(`manifest.json: Not Found ${key} File`)
 					}
-					if (!fs.existsSync(`${root}/dist/${lintFileList[key].fileName}`)) {
+					if (
+						!fs.existsSync(
+							path.normalize(`${root}/dist/${lintFileList[key].fileName}`)
+						)
+					) {
 						throw Error(`Not Found ${key} File`)
 					}
 				})
