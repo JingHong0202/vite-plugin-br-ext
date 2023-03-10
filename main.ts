@@ -13,9 +13,7 @@ import type { Plugin } from 'vite'
 
 export default (): Plugin => {
 	let maniFest: ManiFest
-
 	const rootPath = normalizePath(cwd() + path.sep)
-
 	return {
 		name: 'vite-plugin-br-ext',
 		config(config) {
@@ -28,9 +26,9 @@ export default (): Plugin => {
 			// has manifest.json?
 			if (
 				(getType(input) === '[object Array]' &&
-					!Object.values(input).includes('manifest.json')) ||
+					!Object.values(input).includes('manifest')) ||
 				(getType(input) === '[object String]' &&
-					!(<string>input).includes('manifest.json'))
+					!(<string>input).includes('manifest'))
 			) {
 				config.build!.rollupOptions = {
 					input: path.join(cwd(), './src/manifest.json')
@@ -39,8 +37,8 @@ export default (): Plugin => {
 
 			// clear outDir
 			const outDir = config.build?.outDir || 'dist'
-			if (fs.existsSync(rootPath + outDir)) {
-				deleteDirectoryStack(rootPath + outDir)
+			if (fs.existsSync((config.root || rootPath) + outDir)) {
+				deleteDirectoryStack((config.root || rootPath) + outDir)
 			}
 		},
 
@@ -76,16 +74,16 @@ export default (): Plugin => {
 			for (const chunk of Object.values(bundle)) {
 				const resource =
 					maniFest.hashTable[(chunk.name || chunk.fileName)?.split('.')[0]]
-				// handler HTML
 				if (
 					chunk.type === 'chunk' &&
 					chunk.facadeModuleId &&
 					path.extname(chunk.facadeModuleId) === '.html'
 				) {
+					// handler HTML
 					resource.output = {
 						path: chunk.facadeModuleId.replace(rootPath, '')
 					}
-				} else if (resource && resource.isEntry) {
+				} else if (resource?.isEntry) {
 					// handler JS
 					const path = resource.attrPath.split('.')
 					const preWorkName = path.find(current => maniFest.preWork[current])

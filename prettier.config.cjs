@@ -8,5 +8,6 @@ module.exports = {
 	// 箭头函数单参数省略括号
 	arrowParens: 'avoid',
 	useTabs: true,
-	trailingComma: 'none'
+	trailingComma: 'none',
+	tabWidth: 2
 }

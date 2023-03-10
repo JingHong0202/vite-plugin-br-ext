@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import { normalizePath } from 'vite'
-import { set, get, getType, createUUID, parsePreCSS } from './utils'
+import { set, get, getType, createUUID, parsePreCSS, prevPath } from './utils'
 import { match } from './utils/permission'
 import {
 	inputsReg,
@@ -15,7 +15,7 @@ import {
 	insertCSSReg,
 	filesReg
 } from './utils/reg'
-import { hasMagic, sync } from 'glob'
+import { hasMagic, globSync as sync } from 'glob'
 import iife from './mixin/iife'
 import log from './utils/logger'
 import type {
@@ -41,7 +41,13 @@ interface Resource {
 	attrPath: string
 	ext: string
 	keyMap: string
+	group?: string
 	output?: ResourceOutput
+}
+
+interface ResourceGroup {
+	attrPath: string
+	group: Resource[]
 }
 
 type PreWork = {
@@ -135,7 +141,7 @@ export class ManiFest {
 				this.maniFestPath = options.input
 			} else if (typeof options.input === 'object') {
 				const find = Object.values(options.input).find(item =>
-					item.includes('manifest.json')
+					item.includes('manifest')
 				)
 				if (find) {
 					maniFestJson = JSON.parse(
@@ -384,24 +390,69 @@ export class ManiFest {
 			dependencies.importedCss.size
 		) {
 			// 当content_scripts 包含css依赖时，自动引入
-			const split = resource.attrPath.split('.'),
-				targetKey = `${split.slice(0, split.length - 2).join('.')}.css`,
+			const targetKey = `${prevPath(resource.attrPath, 2)}.css`,
 				newList = [...dependencies.importedCss]
-			this.result[targetKey] = this.result[targetKey]
-				? [...this.result[targetKey]].concat(newList)
-				: newList
+
+			this.result[targetKey] =
+				getType(this.result[targetKey]) === '[object Array]'
+					? (<string[]>this.result[targetKey]).concat(newList)
+					: newList
 		}
 	}
 
+	handlerGroup() {
+		const keys = Object.keys(this.hashTable),
+			groupHash = <Map<string, ResourceGroup>>new Map()
+		for (let index = 0; index < keys.length; index++) {
+			const current = this.hashTable[keys[index]]
+			if (!current.group) continue
+			if (!groupHash.has(current.group)) {
+				groupHash.set(current.group, {
+					group: [current],
+					attrPath: prevPath(current.attrPath, 1)
+				})
+			} else {
+				groupHash.get(current.group)?.group.push(current)
+			}
+			delete this.hashTable[keys[index]]
+		}
+
+		if (!groupHash.size) return
+		;[...groupHash].forEach(([key, resource]) => {
+			if (isWebResources.test(resource.attrPath)) return
+			const list = <[]>this.result[resource.attrPath]
+			const index = list.findIndex(item => item === key)
+			if (index !== -1) {
+				const left = list.slice(0, index),
+					right = list.slice(index + 1)
+				this.result[resource.attrPath] = [
+					...left,
+					...resource.group.map(item => item.output?.path || item.relativePath),
+					...right
+				]
+			}
+		})
+	}
+
 	buildManifest(plugin: PluginContext) {
+		this.handlerGroup()
 		Object.keys(this.hashTable).forEach(key => {
 			const resource = this.hashTable[key]
 			if (isWebResources.test(resource.attrPath)) return
 
 			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
-				this.result[resource.attrPath] = resource.output!.path
+				const parentPath = prevPath(resource.attrPath, 1),
+					parent = this.result[parentPath]
+				if (getType(parent) === '[object Array]') {
+					const oldIndex = (<string[]>parent).findIndex(
+						item => normalizePath(item) === resource.relativePath
+					)
+					oldIndex !== -1 && (<string[]>parent).splice(oldIndex, 1)
+					;(<string[]>parent).push(resource.output!.path)
+				} else {
+					this.result[resource.attrPath] = resource.output!.path
+				}
 			}
-
 			this.handlerDependencies(plugin, resource)
 		})
 		this.result.permissions = this.result.permissions
@@ -415,7 +466,7 @@ export class ManiFest {
 		})
 	}
 
-	traverseDeep(target: any, parent?: string) {
+	traverseDeep(target: any, parent?: string, group?: string) {
 		for (const key in target) {
 			if (!Object.hasOwnProperty.call(target, key)) continue
 
@@ -427,15 +478,10 @@ export class ManiFest {
 				typeof target[key] === 'string' &&
 				!isNetWorkLink().test(<string>target[key]) &&
 				(ext = path.extname(<string>target[key])) &&
-				!includeNumber().test(ext)
+				!includeNumber().test(ext) &&
+				!hasMagic(<string>target[key])
 			) {
 				// 处理有后缀的路径
-
-				// 特例：处理 *.js *.html
-				if (hasMagic(<string>target[key]) && parent) {
-					return this.matchFileByRules(<string>target[key], parent)
-				}
-
 				const absolutePath = normalizePath(
 					path.join(path.dirname(this.maniFestPath), <string>target[key])
 				)
@@ -459,27 +505,26 @@ export class ManiFest {
 					resource.isEntry = true
 				}
 
-				resource.relativePath = target[key]
+				resource.relativePath = normalizePath(<string>target[key])
 				resource.absolutePath = absolutePath
 				resource.attrPath = `${parent ? `${parent}.${key}` : key}`
 				resource.keyMap = keyMap
 				resource.ext = ext
+				group && (resource.group = group)
 				this.hashTable[keyMap] = <Required<Resource>>resource
-			} else if (parent && isWebResources.test(parent)) {
-				// 处理有没后缀的路径
-				// 是否有通配符
-				if (hasMagic(<string>target[key])) {
-					this.matchFileByRules(<string>target[key], parent)
-				}
+			} else if (parent && hasMagic(<string>target[key])) {
+				// 处理有通配符的路径
+				this.matchFileByRules(<string>target[key], parent)
 			}
 		}
 	}
 
 	matchFileByRules(rules: string, parent = '') {
 		const files = sync(rules, {
-			cwd: path.dirname(this.maniFestPath)
+			cwd: path.dirname(this.maniFestPath),
+			nodir: true
 		})
-		files && files.length && this.traverseDeep(files, parent)
+		files?.length && this.traverseDeep(files, parent, rules)
 	}
 
 	resolveInputs() {

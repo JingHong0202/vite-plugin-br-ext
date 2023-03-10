@@ -3,6 +3,7 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import { babel } from '@rollup/plugin-babel'
 import sucrase from '@rollup/plugin-sucrase'
+import packageJSON from './package.json' assert { type: 'json' }
 
 export default {
 	input: 'index.ts',
@@ -30,27 +31,19 @@ export default {
 		'querystring',
 		'net',
 		'timers'
-	],
+	].concat(Object.keys(packageJSON.dependencies)),
 	output: [
 		{
 			file: 'dist/index.mjs',
 			format: 'es',
 			name: 'bex',
-			sourcemap: 'inline',
-			globals: {
-				vite: 'vite',
-				rollup: 'rollup'
-			}
+			sourcemap: 'inline'
 		},
 		{
 			file: 'dist/index.cjs',
 			format: 'cjs',
 			name: 'bex',
-			sourcemap: 'inline',
-			globals: {
-				vite: 'vite',
-				rollup: 'rollup'
-			}
+			sourcemap: 'inline'
 		}
 	],
 	plugins: [
