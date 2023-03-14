@@ -225,40 +225,40 @@ describe('normalize', () => {
 	test('match', async () => {
 		await expect(
 			(
-				await new DynamicUtils(
-					'chrome.scripting.executeScript',
-					files[0]
-				).init()
+				await new DynamicUtils({
+					attrName: 'chrome.scripting.executeScript',
+					code: files[0]
+				}).init()
 			).state.target
 		).toMatchSnapshot()
 
 		await expect(
 			(
-				await new DynamicUtils(
-					'chrome.scripting.executeScript',
-					files[1]
-				).init()
+				await new DynamicUtils({
+					attrName: 'chrome.scripting.executeScript',
+					code: files[1]
+				}).init()
 			).state.target
 		).toMatchSnapshot()
 
 		await expect(
 			(
-				await new DynamicUtils(
-					'chrome.scripting.executeScript',
-					files[2]
-				).init()
+				await new DynamicUtils({
+					attrName: 'chrome.scripting.executeScript',
+					code: files[2]
+				}).init()
 			).state.target
 		).toMatchSnapshot()
 	})
 
 	test('parse', async () => {
-		const dynamic = new DynamicUtils(
-			'chrome.scripting.executeScript',
-			files[3],
-			process.cwd() + '/tests/'
-		)
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.executeScript',
+			code: files[3],
+			root: process.cwd() + '/tests/'
+		})
 		await dynamic.init()
-		expect(dynamic.each('chunk')).toMatchSnapshot([
+		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
 			{
 				fileName: expect.any(String),
 				id: expect.any(String),
@@ -273,50 +273,52 @@ describe('normalize', () => {
 	})
 })
 
-// describe('SpreadElement', () => {
-// 	test('parse', async () => {
-// 		const dynamic = new DynamicUtils(
-// 			'chrome.scripting.executeScript',
-// 			files[4],
-// 			process.cwd() + '/tests/'
-// 		)
-// 		await dynamic.init()
+describe('SpreadElement', () => {
+	test('parse', async () => {
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.executeScript',
+			code: files[4],
+			root: process.cwd() + '/tests/'
+		})
+		await dynamic.init()
 
-// 		expect(dynamic.each('chunk')).toMatchSnapshot([
-// 			{
-// 				fileName: expect.any(String),
-// 				id: expect.any(String),
-// 				type: 'chunk'
-// 			},
-// 			{
-// 				fileName: expect.any(String),
-// 				id: expect.any(String),
-// 				type: 'chunk'
-// 			}
-// 		])
-// 	})
+		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
+			{
+				fileName: expect.any(String),
+				id: expect.any(String),
+				type: 'chunk'
+			},
+			{
+				fileName: expect.any(String),
+				id: expect.any(String),
+				type: 'chunk'
+			}
+		])
+	})
 
-// 	test('deep parse', async () => {
-// 		const { target, path } = await matchDynamicFileUrl(
-// 			'chrome.scripting.executeScript',
-// 			files[5]
-// 		)
-// 		expect(each(target, 'chunk', path)).toMatchSnapshot([
-// 			{
-// 				fileName: expect.any(String),
-// 				id: expect.any(String),
-// 				type: 'chunk'
-// 			},
-// 			{
-// 				fileName: expect.any(String),
-// 				id: expect.any(String),
-// 				type: 'chunk'
-// 			},
-// 			{
-// 				fileName: expect.any(String),
-// 				id: expect.any(String),
-// 				type: 'chunk'
-// 			}
-// 		])
-// 	})
-// })
+	test('deep parse', async () => {
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.executeScript',
+			code: files[5],
+			root: process.cwd() + '/tests/'
+		})
+		await dynamic.init()
+		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
+			{
+				fileName: expect.any(String),
+				id: expect.any(String),
+				type: 'chunk'
+			},
+			{
+				fileName: expect.any(String),
+				id: expect.any(String),
+				type: 'chunk'
+			},
+			{
+				fileName: expect.any(String),
+				id: expect.any(String),
+				type: 'chunk'
+			}
+		])
+	})
+})

@@ -24,16 +24,33 @@ type State = {
 	path: NodePath
 }
 
+type Type = 'chunk' | 'asset'
+
+type InitParams = {
+	attrName: string
+	code: string
+	root?: string
+	type?: Type
+}
+
+type EachParams = {
+	list?: Node[]
+	type: 'chunk' | 'asset'
+	scopePath?: NodePath
+}
+
 export default class DynamicUtils {
 	attrName: string
 	code: string
 	root: string
 	state!: State
+	type: Type
 
-	constructor(atttName: string, code: string, root: string = __dirname) {
-		this.attrName = atttName
+	constructor({ attrName, code, root = __dirname, type }: InitParams) {
+		this.attrName = attrName
 		this.code = code
 		this.root = root
+		this.type = type
 	}
 
 	init(): Promise<this> {
@@ -129,8 +146,13 @@ export default class DynamicUtils {
 		// binding.referenced | referencePaths | references   expression left right
 	}
 
-	each(type: 'chunk' | 'asset', scopePath: NodePath = this.state.path) {
-		return this.state.target.reduce((accumulator, item) => {
+	each(params: EachParams) {
+		const {
+			list = this.state.target,
+			type,
+			scopePath = this.state.path
+		} = params
+		return list.reduce((accumulator, item) => {
 			const rawVal = <string>item.extra?.rawValue
 			if (types.isStringLiteral(item)) {
 				const filePath = path.normalize(path.resolve(this.root, rawVal))
@@ -171,7 +193,9 @@ export default class DynamicUtils {
 					throw Error('spreadElement must array')
 				}
 
-				accumulator.push(...this.each(type, path))
+				accumulator.push(
+					...this.each({ list: <Node[]>node.elements, type, scopePath: path })
+				)
 			}
 			return accumulator
 		}, [] as EmittedFile[])
