@@ -6,12 +6,24 @@ type State = {
 	ast: types.File
 	path: NodePath
 }
+type Type = 'chunk' | 'asset'
+type InitParams = {
+	attrName: string
+	code: string
+	root?: string
+	type?: Type
+}
+type EachParams = {
+	list?: Node[]
+	scopePath?: NodePath
+}
 export default class DynamicUtils {
 	attrName: string
 	code: string
 	root: string
 	state: State
-	constructor(atttName: string, code: string, root?: string)
+	type: Type
+	constructor({ attrName, code, root, type }: InitParams)
 	init(): Promise<this>
 	parseWithLintArray(
 		node: Node,
@@ -29,6 +41,6 @@ export default class DynamicUtils {
 		node: types.Node
 		path: NodePath
 	}
-	each(type: 'chunk' | 'asset', scopePath?: NodePath): EmittedFile[]
+	each({ list, scopePath }?: EachParams): EmittedFile[]
 }
 export {}

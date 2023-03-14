@@ -258,7 +258,7 @@ describe('normalize', () => {
 			root: process.cwd() + '/tests/'
 		})
 		await dynamic.init()
-		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
+		expect(dynamic.each()).toMatchSnapshot([
 			{
 				fileName: expect.any(String),
 				id: expect.any(String),
@@ -282,7 +282,7 @@ describe('SpreadElement', () => {
 		})
 		await dynamic.init()
 
-		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
+		expect(dynamic.each()).toMatchSnapshot([
 			{
 				fileName: expect.any(String),
 				id: expect.any(String),
@@ -303,7 +303,7 @@ describe('SpreadElement', () => {
 			root: process.cwd() + '/tests/'
 		})
 		await dynamic.init()
-		expect(dynamic.each({ type: 'chunk' })).toMatchSnapshot([
+		expect(dynamic.each()).toMatchSnapshot([
 			{
 				fileName: expect.any(String),
 				id: expect.any(String),

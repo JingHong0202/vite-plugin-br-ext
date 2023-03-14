@@ -35,7 +35,6 @@ type InitParams = {
 
 type EachParams = {
 	list?: Node[]
-	type: 'chunk' | 'asset'
 	scopePath?: NodePath
 }
 
@@ -46,7 +45,12 @@ export default class DynamicUtils {
 	state!: State
 	type: Type
 
-	constructor({ attrName, code, root = __dirname, type }: InitParams) {
+	constructor({
+		attrName,
+		code,
+		root = __dirname,
+		type = 'chunk'
+	}: InitParams) {
 		this.attrName = attrName
 		this.code = code
 		this.root = root
@@ -146,12 +150,10 @@ export default class DynamicUtils {
 		// binding.referenced | referencePaths | references   expression left right
 	}
 
-	each(params: EachParams) {
-		const {
-			list = this.state.target,
-			type,
-			scopePath = this.state.path
-		} = params
+	each({
+		list = this.state.target,
+		scopePath = this.state.path
+	}: EachParams = {}) {
 		return list.reduce((accumulator, item) => {
 			const rawVal = <string>item.extra?.rawValue
 			if (types.isStringLiteral(item)) {
@@ -160,7 +162,7 @@ export default class DynamicUtils {
 					log.error(`dynamic ${rawVal} Not Found`)
 				}
 
-				if (type === 'chunk') {
+				if (this.type === 'chunk') {
 					const fileInfo = path.parse(filePath)
 					const fileName = `dynamic/${createUUID()}${fileInfo.ext.replace(
 						isJSFile,
@@ -194,7 +196,7 @@ export default class DynamicUtils {
 				}
 
 				accumulator.push(
-					...this.each({ list: <Node[]>node.elements, type, scopePath: path })
+					...this.each({ list: <Node[]>node.elements, scopePath: path })
 				)
 			}
 			return accumulator

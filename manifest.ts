@@ -10,8 +10,8 @@ import {
 	isWebResources,
 	isJSFile,
 	isPrepCSSFile,
-	executeScriptReg,
-	annotationRows,
+	// executeScriptReg,
+	// annotationRows,
 	insertCSSReg,
 	filesReg
 } from './utils/reg'
@@ -28,6 +28,7 @@ import type {
 	RenderedChunk
 } from 'rollup'
 import type { ChunkMetadata } from 'vite'
+import DynamicUtils from './utils/dynamic-utils'
 
 interface ResourceOutput {
 	path: string
@@ -173,25 +174,38 @@ export class ManiFest {
 
 	handlerDynamicInput(plugin: PluginContext, code: string, id: string) {
 		// 去除注释
-		code = code.replace(annotationRows(), '')
+		// code = code.replace(annotationRows(), '')
 		// 处理动态JS文件
-		code = this.handlerDynamicJS(plugin, code, id)
+		// await this.handlerDynamicJS(plugin, code, id)
 		// 处理动态CSS文件
 		code = this.handlerDynamicCSS(plugin, code, id)
 
 		return code
 	}
 
-	handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
-		const matchAll = this.matchDynamicFilePaths(executeScriptReg(), code)
-		if (!matchAll.length) return code
-		return this.handlerMatchedPaths({
-			type: 'chunk',
-			matchAll: matchAll as Required<MatchDynamic>[],
+	async handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
+		// const matchAll = this.matchDynamicFilePaths(executeScriptReg(), code)
+		// if (!matchAll.length) return code
+		// return this.handlerMatchedPaths({
+		// 	type: 'chunk',
+		// 	matchAll: matchAll as Required<MatchDynamic>[],
+		// 	code,
+		// 	plugin,
+		// 	id
+		// })
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.executeScript',
 			code,
-			plugin,
-			id
+			root: path.dirname(id)
 		})
+
+		const emitFiles = (await dynamic.init()).each()
+
+		emitFiles.forEach(file => {
+			plugin.emitFile(file)
+		})
+
+		return
 	}
 
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {

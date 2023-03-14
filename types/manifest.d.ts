@@ -46,7 +46,11 @@ export declare class ManiFest {
 	constructor(options: InputOptions)
 	handerPermission(code: string): void
 	handlerDynamicInput(plugin: PluginContext, code: string, id: string): string
-	handlerDynamicJS(plugin: PluginContext, code: string, id: string): string
+	handlerDynamicJS(
+		plugin: PluginContext,
+		code: string,
+		id: string
+	): Promise<void>
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string): string
 	matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]>
 	handlerMatchedPaths({
