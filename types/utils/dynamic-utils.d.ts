@@ -1,6 +1,7 @@
 import { NodePath, Scope } from '@babel/traverse'
 import types, { Node } from '@babel/types'
 import { EmittedFile } from 'rollup'
+import type { PluginItem } from '@babel/core'
 type State = {
 	target: Node[]
 	ast: types.File
@@ -23,8 +24,10 @@ export default class DynamicUtils {
 	root: string
 	state: State
 	type: Type
+	emitFiles: EmittedFile[]
+	plugin: PluginItem
 	constructor({ attrName, code, root, type }: InitParams)
-	init(): Promise<this>
+	init(): this
 	parseWithLintArray(
 		node: Node,
 		scope: Scope | null,
@@ -42,5 +45,6 @@ export default class DynamicUtils {
 		path: NodePath
 	}
 	each({ list, scopePath }?: EachParams): EmittedFile[]
+	generateCode(): this
 }
 export {}

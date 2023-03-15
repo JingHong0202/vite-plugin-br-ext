@@ -1,9 +1,9 @@
 import parser from '@babel/parser'
-import traverse, { Binding, NodePath, Scope } from '@babel/traverse'
-// import generate from '@babel/generator'
-// import template from '@babel/template'
+import { Binding, NodePath, Scope } from '@babel/traverse'
+import core from '@babel/core'
 import types, {
 	ArrayExpression,
+	// CallExpression,
 	Identifier,
 	Node,
 	ObjectExpression,
@@ -17,6 +17,10 @@ import log from '../utils/logger'
 import fs from 'fs'
 import path from 'path'
 import { EmittedFile } from 'rollup'
+import type { PluginItem } from '@babel/core'
+// import { objectExpression } from '@babel/types'
+// import generate from '@babel/generator'
+// import typescript from '@rollup/plugin-typescript'
 
 type State = {
 	target: Node[]
@@ -44,6 +48,8 @@ export default class DynamicUtils {
 	root: string
 	state!: State
 	type: Type
+	emitFiles!: EmittedFile[]
+	plugin!: PluginItem
 
 	constructor({
 		attrName,
@@ -57,46 +63,58 @@ export default class DynamicUtils {
 		this.type = type
 	}
 
-	init(): Promise<this> {
-		return new Promise(resolve => {
-			const ast = parser.parse(this.code, {
-				sourceType: 'unambiguous',
-				plugins: ['typescript'],
-				attachComment: false,
-				tokens: false
-			})
-			traverse(ast, {
-				MemberExpression: path => {
-					if (String(path) != this.attrName) return
-					const args = (<ObjectExpression>(
-						(<OptionalCallExpression>path.parent).arguments[0]
-					)).properties
-					const files = (<ObjectProperty[]>args).find(
-						item => (<Identifier>item.key).name === 'files'
-					)
-					if (!files || !files.value) return
-					if (
-						types.isArrayExpression(files.value) &&
-						files.value.elements?.length
-					) {
-						this.state = { target: <Node[]>files.value.elements, ast, path }
-						resolve(this)
-					} else if (
-						types.isIdentifier(files.value) &&
-						files.value.name === 'files'
-					) {
-						const identifier = this.findIdentifier(path.scope, 'files', path)
-						this.state = {
-							target: <Node[]>(<ArrayExpression>identifier.node).elements,
-							ast,
-							path: identifier.path
-						}
-						resolve(this)
-					}
-					path.stop()
-				}
-			})
+	init() {
+		const ast = parser.parse(this.code, {
+			sourceType: 'unambiguous',
+			plugins: ['typescript'],
+			attachComment: false,
+			tokens: false
 		})
+		this.plugin = {
+			visitor: {
+				MemberExpression: {
+					enter: (path: NodePath) => {
+						if (String(path) != this.attrName) return
+						const args = (<ObjectExpression>(
+							(<OptionalCallExpression>path.parent).arguments[0]
+						)).properties
+						const files = (<ObjectProperty[]>args).find(
+							item => (<Identifier>item.key).name === 'files'
+						)
+						if (!files || !files.value) return
+						if (
+							types.isArrayExpression(files.value) &&
+							files.value.elements?.length
+						) {
+							this.state = { target: <Node[]>files.value.elements, ast, path }
+							this.emitFiles = this.each()
+							// if (path.isCallExpression()) {
+							// 	const argmumentsNode = (<CallExpression>path.parent).arguments[0] as ObjectExpression
+							// 	if (!types.isObjectExpression(argmumentsNode)) log.error(`${this.attrName} not object`)
+							// 	const find = argmumentsNode.properties.find(prop => prop.key.name === 'files')
+							// 	if (!find) log.error(`${this.attrName} not find files field`)
+							// 	if (!types.isArrayExpression(find.value)) log.error(`${this.attrName} value not array`)
+							// 	find.value.elements = this.emitFiles.map(file => file.fileName)
+							// } else if (path.isArrayExpression()) {
+							// }
+						} else if (
+							types.isIdentifier(files.value) &&
+							files.value.name === 'files'
+						) {
+							const identifier = this.findIdentifier(path.scope, 'files', path)
+							this.state = {
+								target: <Node[]>(<ArrayExpression>identifier.node).elements,
+								ast,
+								path: identifier.path
+							}
+							this.emitFiles = this.each()
+						}
+						// path.stop()
+					}
+				}
+			}
+		}
+		return this
 	}
 
 	parseWithLintArray(
@@ -198,8 +216,16 @@ export default class DynamicUtils {
 				accumulator.push(
 					...this.each({ list: <Node[]>node.elements, scopePath: path })
 				)
+				this.state.path = path
 			}
 			return accumulator
 		}, [] as EmittedFile[])
+	}
+
+	generateCode() {
+		core.transformSync(this.code, {
+			plugins: [this.plugin]
+		})
+		return this
 	}
 }

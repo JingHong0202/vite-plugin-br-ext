@@ -3,7 +3,7 @@ import fs from 'fs'
 import { cwd } from 'node:process'
 import { normalizePath } from 'vite'
 import { ManiFest } from './manifest'
-import { isJSFile, isPrepCSSFile } from './utils/reg'
+import { isJSFile, isPrepCSSFile, isVueFile } from './utils/reg'
 import { deleteDirectoryStack } from './utils'
 import { getType } from './utils'
 import iife from './mixin/iife'
@@ -54,7 +54,10 @@ export default (): Plugin => {
 		},
 
 		transform(code, id) {
-			if (!id.includes('node_modules')) {
+			if (
+				!id.includes('node_modules') &&
+				(isJSFile.test(id) || isVueFile.test(id))
+			) {
 				return maniFest.handlerDynamicInput(this, code, id)
 			}
 			return code

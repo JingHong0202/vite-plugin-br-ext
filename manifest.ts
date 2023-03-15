@@ -176,36 +176,30 @@ export class ManiFest {
 		// 去除注释
 		// code = code.replace(annotationRows(), '')
 		// 处理动态JS文件
-		// await this.handlerDynamicJS(plugin, code, id)
+		code = this.handlerDynamicJS(plugin, code, id)
 		// 处理动态CSS文件
-		code = this.handlerDynamicCSS(plugin, code, id)
+		// code = this.handlerDynamicCSS(plugin, code, id)
 
 		return code
 	}
 
-	async handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
-		// const matchAll = this.matchDynamicFilePaths(executeScriptReg(), code)
-		// if (!matchAll.length) return code
-		// return this.handlerMatchedPaths({
-		// 	type: 'chunk',
-		// 	matchAll: matchAll as Required<MatchDynamic>[],
-		// 	code,
-		// 	plugin,
-		// 	id
-		// })
-		const dynamic = new DynamicUtils({
-			attrName: 'chrome.scripting.executeScript',
-			code,
-			root: path.dirname(id)
-		})
+	handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
+		try {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code,
+				root: path.dirname(id)
+			})
 
-		const emitFiles = (await dynamic.init()).each()
+			const emitFiles = dynamic.init().generateCode().emitFiles
 
-		emitFiles.forEach(file => {
-			plugin.emitFile(file)
-		})
-
-		return
+			emitFiles?.forEach(file => {
+				plugin.emitFile(file)
+			})
+		} catch (error) {
+			log.error(String(error))
+		}
+		return code
 	}
 
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {
