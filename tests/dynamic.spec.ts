@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import DynamicUtils from '../utils/dynamic-utils'
+import path from 'node:path'
 
 const files = [
 	`
@@ -12,7 +13,19 @@ chrome.scripting.executeScript({
 let files
 files = [];
 (function() {
-files = [...files,1]
+files = ['./content/inject.ts']
+})()
+chrome.scripting.executeScript({
+		files,
+		target: {  }
+})
+`,
+	`
+let files
+files = [];
+(function() {
+files2 = ['./content/inject.ts']
+files = ['./content/inject.ts',...files2]
 })()
 chrome.scripting.executeScript({
 		files,
@@ -222,30 +235,69 @@ chrome.scripting.executeScript({
 // }
 
 describe('normalize', () => {
-	test('match', async () => {
-		// await expect(
-		// 	(
-		// 		await new DynamicUtils({
-		// 			attrName: 'chrome.scripting.executeScript',
-		// 			code: files[0]
-		// 		}).init().generateCode()
-		// 	).state.target
+	const root = path.resolve(__dirname, './example/input/scripts')
+	test('match', () => {
+		expect(() => {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code: files[0],
+				root
+			})
+			const { code } = dynamic.generateCode()
+
+			expect(dynamic.emitFiles).toHaveLength(1)
+
+			dynamic.emitFiles.forEach(item => {
+				if (code.indexOf(item.fileName) === -1) {
+					throw Error(`Not Found in the ${item.fileName} of code`)
+				}
+			})
+		}).not.toThrowError()
+
+		expect(() => {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code: files[1],
+				root
+			})
+			const { code } = dynamic.generateCode()
+
+			expect(dynamic.emitFiles).toHaveLength(1)
+
+			dynamic.emitFiles.forEach(item => {
+				if (code.indexOf(item.fileName) === -1) {
+					throw Error(`Not Found in the ${item.fileName} of code`)
+				}
+			})
+		}).not.toThrowError()
+
+		// expect(() => {
+		// 	const dynamic = new DynamicUtils({
+		// 		attrName: 'chrome.scripting.executeScript',
+		// 		code: files[2],
+		// 		root
+		// 	})
+		// 	const { code } = dynamic.generateCode()
+
+		// 	expect(dynamic.emitFiles).toHaveLength(1)
+
+		// 	dynamic.emitFiles.forEach(item => {
+		// 		if (code.indexOf(item.fileName) === -1) {
+		// 			throw Error(`Not Found in the ${item.fileName} of code`)
+		// 		}
+		// 	})
+		// }).not.toThrowError()
+		// expect(
+		// 	new DynamicUtils({
+		// 		attrName: 'chrome.scripting.executeScript',
+		// 		code: files[1]
+		// 	}).init()
 		// ).toMatchSnapshot()
-		// await expect(
-		// 	(
-		// 		await new DynamicUtils({
-		// 			attrName: 'chrome.scripting.executeScript',
-		// 			code: files[1]
-		// 		}).init()
-		// 	).state.target
-		// ).toMatchSnapshot()
-		// await expect(
-		// 	(
-		// 		await new DynamicUtils({
-		// 			attrName: 'chrome.scripting.executeScript',
-		// 			code: files[2]
-		// 		}).init()
-		// 	).state.target
+		// expect(
+		// 	new DynamicUtils({
+		// 		attrName: 'chrome.scripting.executeScript',
+		// 		code: files[2]
+		// 	}).init()
 		// ).toMatchSnapshot()
 	})
 

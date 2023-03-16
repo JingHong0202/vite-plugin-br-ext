@@ -184,22 +184,16 @@ export class ManiFest {
 	}
 
 	handlerDynamicJS(plugin: PluginContext, code: string, id: string) {
-		try {
-			const dynamic = new DynamicUtils({
-				attrName: 'chrome.scripting.executeScript',
-				code,
-				root: path.dirname(id)
-			})
-
-			const emitFiles = dynamic.init().generateCode().emitFiles
-
-			emitFiles?.forEach(file => {
-				plugin.emitFile(file)
-			})
-		} catch (error) {
-			log.error(String(error))
-		}
-		return code
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.executeScript',
+			code,
+			root: path.dirname(id)
+		})
+		const transformResult = dynamic.generateCode()
+		dynamic.emitFiles?.forEach(file => {
+			plugin.emitFile(file)
+		})
+		return transformResult?.code ?? code
 	}
 
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {

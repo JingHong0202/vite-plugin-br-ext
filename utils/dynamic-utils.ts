@@ -1,5 +1,5 @@
 import parser from '@babel/parser'
-import { Binding, NodePath, Scope } from '@babel/traverse'
+import { NodePath, Scope } from '@babel/traverse'
 import core from '@babel/core'
 import types, {
 	ArrayExpression,
@@ -61,6 +61,8 @@ export default class DynamicUtils {
 		this.code = code
 		this.root = root
 		this.type = type
+
+		this.init()
 	}
 
 	init() {
@@ -88,24 +90,9 @@ export default class DynamicUtils {
 						) {
 							this.state = { target: <Node[]>files.value.elements, ast, path }
 							this.emitFiles = this.each()
-							// if (path.isMemberExpression()) {
-							// 	const argmumentsPath = path.parentPath.get('arguments')[0]
-							// 	if (!argmumentsPath.isObjectExpression())
-							// 		log.error(`${this.attrName} not object`)
-							// 	const propertiesPath = argmumentsPath
-							// 		.get('properties')
-							// 		.find(prop => prop.node.key.name === 'files')
-							// 	if (!propertiesPath)
-							// 		log.error(`${this.attrName} not find files field`)
-							// 	if (!types.isArrayExpression(propertiesPath.node.value))
-							// 		log.error(`${this.attrName} value not array`)
-							// 	propertiesPath.get("value").node.elements = this.emitFiles.map(file =>
-							// 		types.stringLiteral(file.fileName)
-							// 	)
-
-							// 	console.log(1)
-							// } else if (path.isArrayExpression()) {
-							// }
+							files.value.elements = this.emitFiles.map(file =>
+								types.stringLiteral(file.fileName!)
+							)
 						} else if (
 							types.isIdentifier(files.value) &&
 							files.value.name === 'files'
@@ -117,6 +104,15 @@ export default class DynamicUtils {
 								path: identifier.path
 							}
 							this.emitFiles = this.each()
+							if (
+								identifier.path.isAssignmentExpression({ operator: '=' }) &&
+								identifier.path.get('right').isArrayExpression()
+							) {
+								;(<ArrayExpression>identifier.path.node.right).elements =
+									this.emitFiles.map(file =>
+										types.stringLiteral(file.fileName!)
+									)
+							}
 						}
 						// path.stop()
 					}
@@ -165,7 +161,7 @@ export default class DynamicUtils {
 			return this.parseWithLintArray(
 				<Node>right,
 				scope,
-				(<Binding>binding).path
+				constantViolations[constantViolations.length - 1]
 			)
 		} else {
 			if (init) {
@@ -216,7 +212,8 @@ export default class DynamicUtils {
 				const argument = item.argument as Identifier
 				const { node, path } = this.findIdentifier(
 					scopePath.scope,
-					argument.name
+					argument.name,
+					scopePath
 				)
 				if (!types.isArrayExpression(node)) {
 					throw Error('spreadElement must array')
@@ -225,7 +222,7 @@ export default class DynamicUtils {
 				accumulator.push(
 					...this.each({ list: <Node[]>node.elements, scopePath: path })
 				)
-				this.state.path = path
+				// this.state.path = path
 			}
 			return accumulator
 		}, [] as EmittedFile[])
@@ -234,9 +231,8 @@ export default class DynamicUtils {
 	// replace() {}
 
 	generateCode() {
-		core.transformSync(this.code, {
+		return core.transformSync(this.code, {
 			plugins: [this.plugin]
-		})
-		return this
+		})!
 	}
 }
