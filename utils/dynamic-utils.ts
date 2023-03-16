@@ -88,13 +88,22 @@ export default class DynamicUtils {
 						) {
 							this.state = { target: <Node[]>files.value.elements, ast, path }
 							this.emitFiles = this.each()
-							// if (path.isCallExpression()) {
-							// 	const argmumentsNode = (<CallExpression>path.parent).arguments[0] as ObjectExpression
-							// 	if (!types.isObjectExpression(argmumentsNode)) log.error(`${this.attrName} not object`)
-							// 	const find = argmumentsNode.properties.find(prop => prop.key.name === 'files')
-							// 	if (!find) log.error(`${this.attrName} not find files field`)
-							// 	if (!types.isArrayExpression(find.value)) log.error(`${this.attrName} value not array`)
-							// 	find.value.elements = this.emitFiles.map(file => file.fileName)
+							// if (path.isMemberExpression()) {
+							// 	const argmumentsPath = path.parentPath.get('arguments')[0]
+							// 	if (!argmumentsPath.isObjectExpression())
+							// 		log.error(`${this.attrName} not object`)
+							// 	const propertiesPath = argmumentsPath
+							// 		.get('properties')
+							// 		.find(prop => prop.node.key.name === 'files')
+							// 	if (!propertiesPath)
+							// 		log.error(`${this.attrName} not find files field`)
+							// 	if (!types.isArrayExpression(propertiesPath.node.value))
+							// 		log.error(`${this.attrName} value not array`)
+							// 	propertiesPath.get("value").node.elements = this.emitFiles.map(file =>
+							// 		types.stringLiteral(file.fileName)
+							// 	)
+
+							// 	console.log(1)
 							// } else if (path.isArrayExpression()) {
 							// }
 						} else if (
@@ -221,6 +230,8 @@ export default class DynamicUtils {
 			return accumulator
 		}, [] as EmittedFile[])
 	}
+
+	// replace() {}
 
 	generateCode() {
 		core.transformSync(this.code, {
