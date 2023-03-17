@@ -3,6 +3,7 @@ import { NodePath, Scope } from '@babel/traverse'
 import core from '@babel/core'
 import types, {
 	ArrayExpression,
+	Expression,
 	// CallExpression,
 	Identifier,
 	Node,
@@ -35,6 +36,7 @@ type InitParams = {
 	code: string
 	root?: string
 	type?: Type
+	field?: string
 }
 
 type EachParams = {
@@ -50,18 +52,20 @@ export default class DynamicUtils {
 	type: Type
 	emitFiles!: EmittedFile[]
 	plugin!: PluginItem
+	field: string
 
 	constructor({
 		attrName,
 		code,
 		root = __dirname,
-		type = 'chunk'
+		type = 'chunk',
+		field = 'files'
 	}: InitParams) {
 		this.attrName = attrName
 		this.code = code
 		this.root = root
 		this.type = type
-
+		this.field = field
 		this.init()
 	}
 
@@ -81,7 +85,7 @@ export default class DynamicUtils {
 							(<OptionalCallExpression>path.parent).arguments[0]
 						)).properties
 						const files = (<ObjectProperty[]>args).find(
-							item => (<Identifier>item.key).name === 'files'
+							item => (<Identifier>item.key).name === this.field
 						)
 						if (!files || !files.value) return
 						if (
@@ -95,9 +99,13 @@ export default class DynamicUtils {
 							)
 						} else if (
 							types.isIdentifier(files.value) &&
-							files.value.name === 'files'
+							files.value.name === this.field
 						) {
-							const identifier = this.findIdentifier(path.scope, 'files', path)
+							const identifier = this.findIdentifier(
+								path.scope,
+								this.field,
+								path
+							)
 							this.state = {
 								target: <Node[]>(<ArrayExpression>identifier.node).elements,
 								ast,
@@ -109,6 +117,14 @@ export default class DynamicUtils {
 								identifier.path.get('right').isArrayExpression()
 							) {
 								;(<ArrayExpression>identifier.path.node.right).elements =
+									this.emitFiles.map(file =>
+										types.stringLiteral(file.fileName!)
+									)
+							} else if (
+								identifier.path.isVariableDeclarator() &&
+								types.isArrayExpression(<Expression>identifier.path.node.init)
+							) {
+								;(<ArrayExpression>identifier.path.node.init).elements =
 									this.emitFiles.map(file =>
 										types.stringLiteral(file.fileName!)
 									)
@@ -132,7 +148,7 @@ export default class DynamicUtils {
 		}
 
 		if (!types.isArrayExpression(node) || !path) {
-			throw Error(`files: The value must array`)
+			throw Error(`${this.field}: The value must array`)
 		}
 
 		return { node, path }
@@ -168,7 +184,7 @@ export default class DynamicUtils {
 				return this.parseWithLintArray(init, null, path)
 			}
 		}
-		throw Error(`files: The value Not Found`)
+		throw Error(`${this.field}: The value Not Found`)
 		// binding.constantViolations   expression left right
 		// binding.referenced | referencePaths | references   expression left right
 	}
@@ -222,6 +238,7 @@ export default class DynamicUtils {
 				accumulator.push(
 					...this.each({ list: <Node[]>node.elements, scopePath: path })
 				)
+				path?.remove()
 				// this.state.path = path
 			}
 			return accumulator

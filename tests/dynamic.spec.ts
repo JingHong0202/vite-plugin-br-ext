@@ -21,18 +21,6 @@ chrome.scripting.executeScript({
 })
 `,
 	`
-let files
-files = [];
-(function() {
-files2 = ['./content/inject.ts']
-files = ['./content/inject.ts',...files2]
-})()
-chrome.scripting.executeScript({
-		files,
-		target: {  }
-})
-`,
-	`
 let files;
 let files2 = ["1",1]
 files = [];
@@ -50,7 +38,7 @@ chrome.scripting.executeScript({
 
 
 file3 = [1]
-const file4 = ["4"]
+const file4 = ["./content/inject.ts"]
 file3 = file4
 `,
 	`
@@ -60,22 +48,30 @@ chrome.scripting.executeScript({
 })
 `,
 	`
-const files = ['./example/input/scripts/background.ts']
+const files2 = ['./content/inject.ts','./content/inject.ts','./content/inject.ts']
 chrome.scripting.executeScript({
-		files: [    './example/input/scripts/content/inject.ts', ...files],
+		files: [    './content/inject.ts', ...files2],
 		target: { }
 })
 `,
 	`
-const file3 =  ['./example/input/scripts/content/inject.ts'];
-const files2 = ['./example/input/scripts/content/inject.ts',...file3]
-const files = ['./example/input/scripts/background.ts',...files2]
+const files3 =  ['./content/inject.ts'];
+const files2 = ['./content/inject.ts',...files3]
+const files = ['./content/inject.ts',...files2]
 chrome.scripting.executeScript({
 		files: [    ...files],
 		target: { }
 })
 `
 ]
+
+function emitFilesLint(files, code) {
+	files.forEach(item => {
+		if (code.indexOf(item.fileName) === -1) {
+			throw Error(`Not Found in the ${item.fileName} of code`)
+		}
+	})
+}
 
 // function parseWithLintArray(node, scope?, path?) {
 // 	if (types.isIdentifier(node)) {
@@ -234,8 +230,8 @@ chrome.scripting.executeScript({
 // 	}, [])
 // }
 
+const root = path.resolve(__dirname, './example/input/scripts')
 describe('normalize', () => {
-	const root = path.resolve(__dirname, './example/input/scripts')
 	test('match', () => {
 		expect(() => {
 			const dynamic = new DynamicUtils({
@@ -247,11 +243,7 @@ describe('normalize', () => {
 
 			expect(dynamic.emitFiles).toHaveLength(1)
 
-			dynamic.emitFiles.forEach(item => {
-				if (code.indexOf(item.fileName) === -1) {
-					throw Error(`Not Found in the ${item.fileName} of code`)
-				}
-			})
+			emitFilesLint(dynamic.emitFiles, code)
 		}).not.toThrowError()
 
 		expect(() => {
@@ -264,29 +256,9 @@ describe('normalize', () => {
 
 			expect(dynamic.emitFiles).toHaveLength(1)
 
-			dynamic.emitFiles.forEach(item => {
-				if (code.indexOf(item.fileName) === -1) {
-					throw Error(`Not Found in the ${item.fileName} of code`)
-				}
-			})
+			emitFilesLint(dynamic.emitFiles, code)
 		}).not.toThrowError()
 
-		// expect(() => {
-		// 	const dynamic = new DynamicUtils({
-		// 		attrName: 'chrome.scripting.executeScript',
-		// 		code: files[2],
-		// 		root
-		// 	})
-		// 	const { code } = dynamic.generateCode()
-
-		// 	expect(dynamic.emitFiles).toHaveLength(1)
-
-		// 	dynamic.emitFiles.forEach(item => {
-		// 		if (code.indexOf(item.fileName) === -1) {
-		// 			throw Error(`Not Found in the ${item.fileName} of code`)
-		// 		}
-		// 	})
-		// }).not.toThrowError()
 		// expect(
 		// 	new DynamicUtils({
 		// 		attrName: 'chrome.scripting.executeScript',
@@ -301,26 +273,41 @@ describe('normalize', () => {
 		// ).toMatchSnapshot()
 	})
 
-	test('parse', async () => {
-		// const dynamic = new DynamicUtils({
-		// 	attrName: 'chrome.scripting.executeScript',
-		// 	code: files[3],
-		// 	root: process.cwd() + '/tests/'
-		// })
-		// await dynamic.init()
-		// expect(dynamic.each()).toMatchSnapshot([
-		// 	{
-		// 		fileName: expect.any(String),
-		// 		id: expect.any(String),
-		// 		type: 'chunk'
-		// 	},
-		// 	{
-		// 		fileName: expect.any(String),
-		// 		id: expect.any(String),
-		// 		type: 'chunk'
-		// 	}
-		// ])
+	test('deep find', () => {
+		expect(() => {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code: files[2],
+				root
+			})
+			const { code } = dynamic.generateCode()
+
+			expect(dynamic.emitFiles).toHaveLength(1)
+
+			emitFilesLint(dynamic.emitFiles, code)
+		}).not.toThrowError()
 	})
+
+	// test('parse', async () => {
+	// const dynamic = new DynamicUtils({
+	// 	attrName: 'chrome.scripting.executeScript',
+	// 	code: files[3],
+	// 	root: process.cwd() + '/tests/'
+	// })
+	// await dynamic.init()
+	// expect(dynamic.each()).toMatchSnapshot([
+	// 	{
+	// 		fileName: expect.any(String),
+	// 		id: expect.any(String),
+	// 		type: 'chunk'
+	// 	},
+	// 	{
+	// 		fileName: expect.any(String),
+	// 		id: expect.any(String),
+	// 		type: 'chunk'
+	// 	}
+	// ])
+	// })
 })
 
 describe('SpreadElement', () => {
@@ -343,31 +330,49 @@ describe('SpreadElement', () => {
 		// 		type: 'chunk'
 		// 	}
 		// ])
+
+		expect(() => {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code: files[4],
+				root
+			})
+			const { code } = dynamic.generateCode()
+
+			expect(dynamic.emitFiles).toHaveLength(4)
+
+			emitFilesLint(dynamic.emitFiles, code)
+
+			if (
+				code.includes(
+					`const files2 = ['./content/inject.ts','./content/inject.ts','./content/inject.ts']`
+				)
+			) {
+				throw Error(`files2 block should not exist`)
+			}
+		}).not.toThrowError()
 	})
 
-	// test('deep parse', async () => {
-	// 	const dynamic = new DynamicUtils({
-	// 		attrName: 'chrome.scripting.executeScript',
-	// 		code: files[5],
-	// 		root: process.cwd() + '/tests/'
-	// 	})
-	// 	await dynamic.init()
-	// 	expect(dynamic.each()).toMatchSnapshot([
-	// 		{
-	// 			fileName: expect.any(String),
-	// 			id: expect.any(String),
-	// 			type: 'chunk'
-	// 		},
-	// 		{
-	// 			fileName: expect.any(String),
-	// 			id: expect.any(String),
-	// 			type: 'chunk'
-	// 		},
-	// 		{
-	// 			fileName: expect.any(String),
-	// 			id: expect.any(String),
-	// 			type: 'chunk'
-	// 		}
-	// 	])
-	// })
+	test('deep parse', async () => {
+		expect(() => {
+			const dynamic = new DynamicUtils({
+				attrName: 'chrome.scripting.executeScript',
+				code: files[5],
+				root
+			})
+			const { code } = dynamic.generateCode()
+
+			expect(dynamic.emitFiles).toHaveLength(3)
+
+			emitFilesLint(dynamic.emitFiles, code)
+
+			if (
+				code.includes(`files3`) &&
+				code.includes(`files2`) &&
+				code.includes(`files`)
+			) {
+				throw Error(`block should not exist`)
+			}
+		}).not.toThrowError()
+	})
 })
