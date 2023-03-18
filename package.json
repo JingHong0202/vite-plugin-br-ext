@@ -56,6 +56,8 @@
 		"@rollup/plugin-node-resolve": "^15.0.1",
 		"@rollup/plugin-sucrase": "^5.0.1",
 		"@rollup/plugin-typescript": "^11.0.0",
+		"@types/babel__core": "^7.20.0",
+		"@types/babel__traverse": "^7.18.3",
 		"@types/glob": "^8.0.1",
 		"@types/inquirer": "^9.0.3",
 		"@types/node": "^18.14.0",

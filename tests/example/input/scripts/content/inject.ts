@@ -17,3 +17,7 @@ chrome.runtime.sendMessage(
 		console.log(response)
 	}
 )
+
+const a: string = '123123'
+
+console.log(a)

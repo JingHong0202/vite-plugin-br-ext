@@ -1,32 +1,30 @@
-import { NodePath, Scope } from '@babel/traverse'
+import core from '@babel/core'
 import types, { Node } from '@babel/types'
 import { EmittedFile } from 'rollup'
-import type { PluginItem } from '@babel/core'
-type State = {
-	target: Node[]
-	ast: types.File
-	path: NodePath
-}
+import type { Scope } from '@babel/traverse'
+import type { PluginItem, NodePath } from '@babel/core'
 type Type = 'chunk' | 'asset'
 type InitParams = {
 	attrName: string
 	code: string
 	root?: string
 	type?: Type
+	field?: string
 }
 type EachParams = {
-	list?: Node[]
-	scopePath?: NodePath
+	list: Node[]
+	scopePath: NodePath
 }
 export default class DynamicUtils {
 	attrName: string
 	code: string
 	root: string
-	state: State
 	type: Type
 	emitFiles: EmittedFile[]
 	plugin: PluginItem
-	constructor({ attrName, code, root, type }: InitParams)
+	field: string
+	tasks: any[]
+	constructor({ attrName, code, root, type, field }: InitParams)
 	init(): this
 	parseWithLintArray(
 		node: Node,
@@ -42,9 +40,9 @@ export default class DynamicUtils {
 		path?: NodePath
 	): {
 		node: types.Node
-		path: NodePath
+		path: core.NodePath<core.types.Node>
 	}
-	each({ list, scopePath }?: EachParams): EmittedFile[]
-	generateCode(): this
+	each({ list, scopePath }: EachParams): EmittedFile[]
+	generateCode(): core.BabelFileResult
 }
 export {}

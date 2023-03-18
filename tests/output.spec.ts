@@ -21,14 +21,14 @@ describe('Chrome V3 Normalize Lint', () => {
 				}
 			}
 		})
-		expect(output).toHaveLength(5)
+		expect(output).toHaveLength(6)
 		expect(() => {
 			const manifest_output = output.find(
 				item => item.fileName === 'manifest.json'
 			)
-			const dynamic = output.find(item => item.fileName.includes('dynamic'))
+			const dynamic = output.filter(item => item.fileName.includes('dynamic'))
 			if (!manifest_output) throw Error('Not Found manifest.json')
-			if (!dynamic) throw Error('Not Found dynamic file')
+			if (dynamic.length !== 2) throw Error('Not Found dynamic file')
 			try {
 				// @ts-ignore
 				const json = JSON.parse(manifest_output.source)

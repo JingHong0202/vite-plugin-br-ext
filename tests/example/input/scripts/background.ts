@@ -9,5 +9,10 @@ chrome.tabs.onActivated.addListener(activeInfo => {
 		files: ['./content/inject.ts'],
 		target: { tabId: activeInfo.tabId }
 	})
+
+	chrome.scripting.insertCSS({
+		files: ['../style/style.css'],
+		target: { tabId: activeInfo.tabId }
+	})
 })
 const _bookmark = new BookMarkUtils()

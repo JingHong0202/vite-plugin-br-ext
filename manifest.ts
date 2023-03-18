@@ -9,11 +9,11 @@ import {
 	includeNumber,
 	isWebResources,
 	isJSFile,
-	isPrepCSSFile,
+	isPrepCSSFile
 	// executeScriptReg,
 	// annotationRows,
-	insertCSSReg,
-	filesReg
+	// insertCSSReg,
+	// filesReg
 } from './utils/reg'
 import { hasMagic, globSync as sync } from 'glob'
 import iife from './mixin/iife'
@@ -55,16 +55,16 @@ type PreWork = {
 	[key: string]: (...args: any[]) => Promise<ResourceOutput> | ResourceOutput
 }
 
-type MatchDynamic = {
-	start: number
-	end: number
-	filesFieldStartIndex?: number
-	filesFieldEndIndex?: number
-	files?: {
-		val: string
-		type: string
-	}[]
-}
+// type MatchDynamic = {
+// 	start: number
+// 	end: number
+// 	filesFieldStartIndex?: number
+// 	filesFieldEndIndex?: number
+// 	files?: {
+// 		val: string
+// 		type: string
+// 	}[]
+// }
 
 export class ManiFest {
 	readonly origin: any
@@ -178,7 +178,7 @@ export class ManiFest {
 		// 处理动态JS文件
 		code = this.handlerDynamicJS(plugin, code, id)
 		// 处理动态CSS文件
-		// code = this.handlerDynamicCSS(plugin, code, id)
+		code = this.handlerDynamicCSS(plugin, code, id)
 
 		return code
 	}
@@ -191,138 +191,28 @@ export class ManiFest {
 		})
 		const transformResult = dynamic.generateCode()
 		dynamic.emitFiles?.forEach(file => {
-			plugin.emitFile(file)
+			return plugin.emitFile(file)
 		})
 		return transformResult?.code ?? code
 	}
 
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string) {
-		const matchAll = this.matchDynamicFilePaths(insertCSSReg(), code)
-		if (!matchAll.length) return code
-		return this.handlerMatchedPaths({
-			type: 'asset',
-			plugin,
-			matchAll: matchAll as Required<MatchDynamic>[],
+		const dynamic = new DynamicUtils({
+			attrName: 'chrome.scripting.insertCSS',
 			code,
-			id
+			root: path.dirname(id),
+			type: 'asset'
 		})
-	}
-
-	matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]> {
-		const reusltArr: MatchDynamic[] = []
-		for (const match of code.matchAll(reg)) {
-			const lastIndex = match.index! + (match[0].length - 1)
-			reusltArr.push({
-				start: match.index!,
-				end: lastIndex
-			})
-		}
-
-		return reusltArr.flatMap(item => {
-			const result = ['(']
-
-			while (result.length) {
-				++item.end
-				if (/[({]/.test(code[item.end])) {
-					result.push(code[item.end])
-				} else if (code[item.end] === ')') {
-					result.splice(result.indexOf('('), 1)
-				} else if (code[item.end] === '}') {
-					result.splice(result.indexOf('{'), 1)
-				}
-			}
-
-			const block = code.slice(item.start, item.end + 1)
-			const filesField = block.match(filesReg())
-			if (filesField) {
-				const urlMatch = filesField[1].split(',').flatMap(i => {
-					return [
-						/["'](.+)["']$/g.test(i)
-							? {
-									val: i.replace(/["']/g, '').trim(),
-									type: 'path'
-							  }
-							: {
-									val: i,
-									type: 'variable'
-							  }
-					]
-				})
-				item.filesFieldStartIndex = filesField.index! + item.start
-				item.filesFieldEndIndex =
-					filesField.index! + item.start + filesField[0].length
-				item.files = urlMatch
-				return [item]
-			}
-			return []
+		const transformResult = dynamic.generateCode()
+		dynamic.emitFiles?.forEach(file => {
+			this.dynamicImports.set(
+				file.fileName,
+				// @ts-ignore
+				path.relative(path.dirname(this.maniFestPath), <string>file.path)
+			)
+			plugin.emitFile(file)
 		})
-	}
-
-	handlerMatchedPaths({
-		type,
-		matchAll,
-		code,
-		plugin,
-		id
-	}: {
-		type: 'chunk' | 'asset'
-		matchAll: Required<MatchDynamic>[]
-		code: string
-		plugin: PluginContext
-		id: string
-	}) {
-		let diff = 0
-		for (const iterator of matchAll) {
-			const newFiles = iterator.files.map(file => {
-				if (file.type === 'variable') {
-					return file.val
-				} else if (file.type === 'path') {
-					const filePath = normalizePath(
-						path.resolve(path.dirname(id), file.val)
-					)
-					if (!fs.existsSync(filePath)) {
-						log.error(`dynamic ${file.val} Not Found`)
-					}
-
-					const fileInfo = path.parse(filePath)
-					let fileName: string
-
-					if (type === 'asset') {
-						fileName = `dynamic/${createUUID()}.css`
-						plugin.emitFile({
-							type: 'asset',
-							source: fs.readFileSync(filePath, 'utf-8'),
-							fileName
-						})
-						this.dynamicImports.set(
-							fileName,
-							path.relative(path.dirname(this.maniFestPath), filePath)
-						)
-					} else {
-						fileName = `dynamic/${createUUID()}${fileInfo.ext.replace(
-							isJSFile,
-							'.js'
-						)}`
-						plugin.emitFile({
-							id: filePath,
-							type: 'chunk',
-							fileName
-						})
-					}
-					return normalizePath(`/${fileName}`)
-				}
-			})
-
-			const replaceStr = code.slice(
-					diff + iterator.filesFieldStartIndex,
-					diff + iterator.filesFieldEndIndex
-				),
-				replaceVal = `files: ${JSON.stringify(newFiles)}`
-			diff = diff + Math.max(0, replaceVal.length - replaceStr.length)
-			code = code.replace(replaceStr, replaceVal)
-		}
-
-		return code
+		return transformResult?.code ?? code
 	}
 
 	async handlerCSS(

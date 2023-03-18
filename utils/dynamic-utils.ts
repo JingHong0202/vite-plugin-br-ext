@@ -1,5 +1,3 @@
-import parser from '@babel/parser'
-import { NodePath, Scope } from '@babel/traverse'
 import core from '@babel/core'
 import types, {
 	ArrayExpression,
@@ -18,16 +16,18 @@ import log from '../utils/logger'
 import fs from 'fs'
 import path from 'path'
 import { EmittedFile } from 'rollup'
-import type { PluginItem } from '@babel/core'
+import type { Scope } from '@babel/traverse'
+import type { PluginItem, NodePath } from '@babel/core'
+// import parser from '@babel/parser'
 // import { objectExpression } from '@babel/types'
 // import generate from '@babel/generator'
 // import typescript from '@rollup/plugin-typescript'
 
-type State = {
-	target: Node[]
-	ast: types.File
-	path: NodePath
-}
+// type State = {
+// 	target: Node[]
+// 	ast: types.File
+// 	path: NodePath
+// }
 
 type Type = 'chunk' | 'asset'
 
@@ -40,19 +40,20 @@ type InitParams = {
 }
 
 type EachParams = {
-	list?: Node[]
-	scopePath?: NodePath
+	list: Node[]
+	scopePath: NodePath
 }
 
 export default class DynamicUtils {
 	attrName: string
 	code: string
 	root: string
-	state!: State
+	// state!: State
 	type: Type
-	emitFiles!: EmittedFile[]
+	emitFiles: EmittedFile[] = []
 	plugin!: PluginItem
 	field: string
+	tasks: any[] = []
 
 	constructor({
 		attrName,
@@ -70,14 +71,20 @@ export default class DynamicUtils {
 	}
 
 	init() {
-		const ast = parser.parse(this.code, {
-			sourceType: 'unambiguous',
-			plugins: ['typescript'],
-			attachComment: false,
-			tokens: false
-		})
+		// const ast = parser.parse(this.code, {
+		// 	sourceType: 'unambiguous',
+		// 	plugins: ['typescript'],
+		// 	attachComment: false,
+		// 	tokens: false
+		// })
 		this.plugin = {
+			name: 'babel-plugin-dynamic-process',
 			visitor: {
+				Program: {
+					exit: () => {
+						this.tasks.forEach(task => task.path[task.actions]())
+					}
+				},
 				MemberExpression: {
 					enter: (path: NodePath) => {
 						if (String(path) != this.attrName) return
@@ -92,8 +99,13 @@ export default class DynamicUtils {
 							types.isArrayExpression(files.value) &&
 							files.value.elements?.length
 						) {
-							this.state = { target: <Node[]>files.value.elements, ast, path }
-							this.emitFiles = this.each()
+							this.emitFiles = [
+								...this.emitFiles,
+								...this.each({
+									list: <Node[]>files.value.elements,
+									scopePath: path
+								})
+							]
 							files.value.elements = this.emitFiles.map(file =>
 								types.stringLiteral(file.fileName!)
 							)
@@ -106,12 +118,13 @@ export default class DynamicUtils {
 								this.field,
 								path
 							)
-							this.state = {
-								target: <Node[]>(<ArrayExpression>identifier.node).elements,
-								ast,
-								path: identifier.path
-							}
-							this.emitFiles = this.each()
+							this.emitFiles = [
+								...this.emitFiles,
+								...this.each({
+									list: <Node[]>(<ArrayExpression>identifier.node).elements,
+									scopePath: identifier.path
+								})
+							]
 							if (
 								identifier.path.isAssignmentExpression({ operator: '=' }) &&
 								identifier.path.get('right').isArrayExpression()
@@ -130,6 +143,7 @@ export default class DynamicUtils {
 									)
 							}
 						}
+
 						// path.stop()
 					}
 				}
@@ -189,10 +203,7 @@ export default class DynamicUtils {
 		// binding.referenced | referencePaths | references   expression left right
 	}
 
-	each({
-		list = this.state.target,
-		scopePath = this.state.path
-	}: EachParams = {}) {
+	each({ list, scopePath }: EachParams) {
 		return list.reduce((accumulator, item) => {
 			const rawVal = <string>item.extra?.rawValue
 			if (types.isStringLiteral(item)) {
@@ -217,12 +228,10 @@ export default class DynamicUtils {
 					accumulator.push({
 						type: 'asset',
 						source: fs.readFileSync(filePath, 'utf-8'),
-						fileName
+						fileName,
+						// @ts-ignore
+						path: filePath
 					})
-					// this.dynamicImports.set(
-					// 	fileName,
-					// 	path.relative(path.dirname(this.maniFestPath), filePath)
-					// )
 				}
 			} else if (types.isSpreadElement(item)) {
 				const argument = item.argument as Identifier
@@ -238,7 +247,10 @@ export default class DynamicUtils {
 				accumulator.push(
 					...this.each({ list: <Node[]>node.elements, scopePath: path })
 				)
-				path?.remove()
+				if (!this.tasks.find(task => task.path == path)) {
+					// path?.remove()
+					this.tasks.push({ path, actions: 'remove' })
+				}
 				// this.state.path = path
 			}
 			return accumulator
