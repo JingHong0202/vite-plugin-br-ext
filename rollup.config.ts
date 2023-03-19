@@ -30,7 +30,10 @@ export default {
 		'tls',
 		'querystring',
 		'net',
-		'timers'
+		'timers',
+		'sass',
+		'less',
+		'stylus'
 	].concat(Object.keys(packageJSON.dependencies)),
 	output: [
 		{

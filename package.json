@@ -38,6 +38,7 @@
 	},
 	"homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme",
 	"dependencies": {
+		"@babel/core": "^7.21.3",
 		"@babel/generator": "^7.21.1",
 		"@babel/parser": "^7.21.2",
 		"@babel/template": "^7.20.7",
@@ -55,6 +56,10 @@
 		"@rollup/plugin-node-resolve": "^15.0.1",
 		"@rollup/plugin-sucrase": "^5.0.1",
 		"@rollup/plugin-typescript": "^11.0.0",
+		"@types/babel__core": "^7.20.0",
+		"@types/less": "^3.0.3",
+		"@types/stylus": "^0.48.38",
+		"@types/babel__traverse": "^7.18.3",
 		"@types/glob": "^8.0.1",
 		"@types/inquirer": "^9.0.3",
 		"@types/node": "^18.14.0",

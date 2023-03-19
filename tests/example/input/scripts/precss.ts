@@ -5,11 +5,15 @@ import BookMarkUtils from '../class/bookmark'
 //   });
 
 chrome.tabs.onActivated.addListener(activeInfo => {
-	chrome.scripting.executeScript({
-		files: ['./content/inject.ts'],
+	chrome.scripting.insertCSS({
+		files: ['../style/style-sass.scss'],
 		target: { tabId: activeInfo.tabId }
 	})
 
+	chrome.scripting.insertCSS({
+		files: ['../style/style-scss.sass'],
+		target: { tabId: activeInfo.tabId }
+	})
 	chrome.scripting.insertCSS({
 		files: ['../style/style.css'],
 		target: { tabId: activeInfo.tabId }

@@ -1,0 +1,24 @@
+{
+	"name": "Bookmark Index",
+	"version": "0.0.1",
+	"description": "游览器书签加强插件",
+	"manifest_version": 3,
+	"background": {
+		"service_worker": "scripts/precss.ts"
+	},
+	"content_scripts": [
+		{
+			"matches": ["<all_urls>"],
+			"run_at": "document_start",
+			"js": ["popup/main.js"],
+			"css": ["./style/style-stylus.styl"]
+		}
+	],
+	"host_permissions": ["<all_urls>"],
+	"web_accessible_resources": [
+		{
+			"resources": ["./style/style-less.less"],
+			"matches": ["<all_urls>"]
+		}
+	]
+}

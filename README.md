@@ -83,5 +83,3 @@ import { createApp } from 'vue'
 import App from './App.vue'
 createApp(App).mount(document.documentElement)
 ```
-
-Bug 1.当 dynamic input path 不是纯字符串而是变量的时候，无法解析文件

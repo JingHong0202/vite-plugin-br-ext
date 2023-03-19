@@ -6,7 +6,7 @@
 import list from './components/list.vue'
 </script>
 
-<style>
+<style lang="scss">
 .hh1 {
 	font-size: 50px;
 }

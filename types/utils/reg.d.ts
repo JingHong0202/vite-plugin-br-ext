@@ -3,6 +3,7 @@ declare const isNetWorkLink: () => RegExp
 declare const includeNumber: () => RegExp
 declare const isWebResources: RegExp
 declare const isJSFile: RegExp
+declare const isVueFile: RegExp
 declare const isPrepCSSFile: RegExp
 declare const clipReg: (tag: string) => RegExp
 declare const PermissionNormalReg: (tag: string) => RegExp
@@ -24,5 +25,6 @@ export {
 	insertCSSReg,
 	annotationRows,
 	filesReg,
-	space
+	space,
+	isVueFile
 }

@@ -22,16 +22,6 @@ interface Resource {
 type PreWork = {
 	[key: string]: (...args: any[]) => Promise<ResourceOutput> | ResourceOutput
 }
-type MatchDynamic = {
-	start: number
-	end: number
-	filesFieldStartIndex?: number
-	filesFieldEndIndex?: number
-	files?: {
-		val: string
-		type: string
-	}[]
-}
 export declare class ManiFest {
 	readonly origin: any
 	result: any
@@ -39,7 +29,7 @@ export declare class ManiFest {
 	hashTable: {
 		[key: string | number]: Resource
 	}
-	dynamicImports: Map<any, any>
+	dynamicImports: Map<string, string>
 	permission: never[]
 	inputs: {}
 	preWork: PreWork
@@ -48,25 +38,11 @@ export declare class ManiFest {
 	handlerDynamicInput(plugin: PluginContext, code: string, id: string): string
 	handlerDynamicJS(plugin: PluginContext, code: string, id: string): string
 	handlerDynamicCSS(plugin: PluginContext, code: string, id: string): string
-	matchDynamicFilePaths(reg: RegExp, code: string): Required<MatchDynamic[]>
-	handlerMatchedPaths({
-		type,
-		matchAll,
-		code,
-		plugin,
-		id
-	}: {
-		type: 'chunk' | 'asset'
-		matchAll: Required<MatchDynamic>[]
-		code: string
-		plugin: PluginContext
-		id: string
-	}): string
 	handlerCSS(
 		plugin: PluginContext,
 		chunk: OutputAsset,
 		bundle: OutputBundle
-	): Promise<string>
+	): Promise<string | undefined>
 	handlerResources(plugin: PluginContext): void
 	handlerDependencies(plugin: PluginContext, resource: Resource): void
 	handlerGroup(): void

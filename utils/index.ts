@@ -32,20 +32,21 @@ async function parsePreCSS(dependciesName: string, filePath: string) {
 	/* eslint-disable */
 	let source
 	if (dependciesName === 'scss' || dependciesName === 'sass') {
-		const CSSHandler = require('sass')
+		const CSSHandler = (await import('sass')).default
 		const result = CSSHandler.compile(filePath, {
 			style: 'compressed'
 		})
 		source = result.css
 	} else if (dependciesName === 'less') {
-		const CSSHandler = require('less')
+		const CSSHandler = (await import('less')).default
 		const result = await CSSHandler.render(fs.readFileSync(filePath, 'utf-8'), {
 			compress: true
 		})
 		source = result.css
 	} else if (dependciesName === 'styl' || dependciesName === 'stylus') {
-		const CSSHandler = require('stylus')
+		const CSSHandler = (await import('stylus')).default
 		const result = CSSHandler.render(fs.readFileSync(filePath, 'utf-8'), {
+			// @ts-ignore
 			compress: true
 		})
 		source = result
