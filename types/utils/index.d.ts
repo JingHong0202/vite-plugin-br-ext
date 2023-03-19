@@ -5,7 +5,7 @@ declare function createUUID(): string
 declare function parsePreCSS(
 	dependciesName: string,
 	filePath: string
-): Promise<any>
+): Promise<string | undefined>
 declare function deleteDirectoryStack(directory: string): void
 declare function prevPath(attrPath: string, deep: number): string
 export {

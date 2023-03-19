@@ -107,14 +107,16 @@ export default (): Plugin => {
 					if (isPrepCSSFile.test(path.extname(chunk.fileName))) {
 						// handler CSS
 						resource.output = {
-							path: await maniFest.handlerCSS(this, chunk, bundle)
+							path: (await maniFest.handlerCSS(this, chunk, bundle)) as string
 						}
 					} else if (
 						chunk.fileName?.startsWith(normalizePath('dynamic/')) &&
 						maniFest.dynamicImports.has(chunk.fileName)
 					) {
 						// handler dynamicInputCSSFile
-						if (isPrepCSSFile.test(chunk.fileName)) {
+						if (
+							isPrepCSSFile.test(maniFest.dynamicImports.get(chunk.fileName)!)
+						) {
 							await maniFest.handlerCSS(this, chunk, bundle)
 						}
 					}

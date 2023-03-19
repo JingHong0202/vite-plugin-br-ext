@@ -4,7 +4,7 @@ import path from 'path'
 import bex from '../index'
 import vue from '@vitejs/plugin-vue'
 import fs from 'node:fs'
-import type { OutputChunk, RollupOutput } from 'rollup'
+import type { OutputAsset, OutputChunk, RollupOutput } from 'rollup'
 
 describe('Chrome V3 Normalize Lint', () => {
 	const root = path.resolve(__dirname, './example/input')
@@ -65,5 +65,29 @@ describe('Chrome V3 Normalize Lint', () => {
 				throw Error(error)
 			}
 		}).not.toThrowError()
+	})
+})
+
+describe('precss lint', () => {
+	const root = path.resolve(__dirname, './example/input')
+
+	test('build', async () => {
+		const { output } = <RollupOutput>await build({
+			root: root,
+			base: './example/input',
+			// @ts-ignore
+			plugins: [vue(), bex()],
+			build: {
+				rollupOptions: {
+					input: `${root}/manifest-precss.json`
+				}
+			}
+		})
+		const css = <OutputAsset[]>(
+			output.filter(file => file.fileName.endsWith('.css'))
+		)
+		expect(css.length).toMatchSnapshot()
+
+		css.forEach(file => expect(file.source).toMatchSnapshot())
 	})
 })

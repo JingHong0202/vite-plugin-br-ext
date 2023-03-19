@@ -99,14 +99,12 @@ export default class DynamicUtils {
 							types.isArrayExpression(files.value) &&
 							files.value.elements?.length
 						) {
-							this.emitFiles = [
-								...this.emitFiles,
-								...this.each({
-									list: <Node[]>files.value.elements,
-									scopePath: path
-								})
-							]
-							files.value.elements = this.emitFiles.map(file =>
+							const newEmitFiles = this.each({
+								list: <Node[]>files.value.elements,
+								scopePath: path
+							})
+							this.emitFiles = this.emitFiles.concat(newEmitFiles)
+							files.value.elements = newEmitFiles.map(file =>
 								types.stringLiteral(file.fileName!)
 							)
 						} else if (
@@ -118,29 +116,24 @@ export default class DynamicUtils {
 								this.field,
 								path
 							)
-							this.emitFiles = [
-								...this.emitFiles,
-								...this.each({
-									list: <Node[]>(<ArrayExpression>identifier.node).elements,
-									scopePath: identifier.path
-								})
-							]
+
+							const newEmitFiles = this.each({
+								list: <Node[]>(<ArrayExpression>identifier.node).elements,
+								scopePath: identifier.path
+							})
+							this.emitFiles = this.emitFiles.concat(newEmitFiles)
 							if (
 								identifier.path.isAssignmentExpression({ operator: '=' }) &&
 								identifier.path.get('right').isArrayExpression()
 							) {
 								;(<ArrayExpression>identifier.path.node.right).elements =
-									this.emitFiles.map(file =>
-										types.stringLiteral(file.fileName!)
-									)
+									newEmitFiles.map(file => types.stringLiteral(file.fileName!))
 							} else if (
 								identifier.path.isVariableDeclarator() &&
 								types.isArrayExpression(<Expression>identifier.path.node.init)
 							) {
 								;(<ArrayExpression>identifier.path.node.init).elements =
-									this.emitFiles.map(file =>
-										types.stringLiteral(file.fileName!)
-									)
+									newEmitFiles.map(file => types.stringLiteral(file.fileName!))
 							}
 						}
 

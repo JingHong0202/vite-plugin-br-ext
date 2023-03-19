@@ -73,7 +73,7 @@ export class ManiFest {
 	// 存储所有输出资源 HashMap
 	hashTable: { [key: string | number]: Resource } = {}
 	// 存储动态导入资源
-	dynamicImports = new Map()
+	dynamicImports: Map<string, string> = new Map()
 	// 存储解析出的权限
 	permission = []
 	// 存储所有入口资源
@@ -206,7 +206,7 @@ export class ManiFest {
 		const transformResult = dynamic.generateCode()
 		dynamic.emitFiles?.forEach(file => {
 			this.dynamicImports.set(
-				file.fileName,
+				file.fileName!,
 				// @ts-ignore
 				path.relative(path.dirname(this.maniFestPath), <string>file.path)
 			)
@@ -226,7 +226,7 @@ export class ManiFest {
 			)
 
 		if (this.dynamicImports.has(chunk.fileName)) {
-			const hash: string = this.dynamicImports.get(chunk.fileName)
+			const hash = <string>this.dynamicImports.get(chunk.fileName)
 			filePath = normalizePath(path.join(path.dirname(this.maniFestPath), hash))
 			dependciesName = path.extname(hash).slice(1)
 		}
@@ -236,18 +236,23 @@ export class ManiFest {
 		}
 
 		const source = await parsePreCSS(dependciesName, filePath)
-		delete bundle[Object.keys(bundle).find(key => bundle[key] === chunk)!]
 
-		const referenceId = plugin.emitFile({
-			fileName: `${chunk.fileName.replace(
-				path.extname(chunk.fileName),
-				''
-			)}-${createUUID()}.css`,
-			source,
-			type: 'asset'
-		})
+		if (chunk.fileName.startsWith('dynamic/')) {
+			;(<OutputAsset>bundle[chunk.fileName]).source =
+				source ?? (<OutputAsset>bundle[chunk.fileName]).source
+		} else {
+			delete bundle[chunk.fileName]
+			const referenceId = plugin.emitFile({
+				fileName: `${chunk.fileName.replace(
+					path.extname(chunk.fileName),
+					''
+				)}-${createUUID()}.css`,
+				source,
+				type: 'asset'
+			})
 
-		return plugin.getFileName(referenceId)
+			return plugin.getFileName(referenceId)
+		}
 	}
 
 	handlerResources(plugin: PluginContext) {
@@ -329,10 +334,11 @@ export class ManiFest {
 	buildManifest(plugin: PluginContext) {
 		this.handlerGroup()
 		Object.keys(this.hashTable).forEach(key => {
-			const resource = this.hashTable[key]
-			if (isWebResources.test(resource.attrPath)) return
+			const resource = this.hashTable[key],
+				isPrecss = isPrepCSSFile.test(resource.ext)
+			if (isWebResources.test(resource.attrPath) && !isPrecss) return
 
-			if (resource.isEntry || isPrepCSSFile.test(resource.ext)) {
+			if (resource.isEntry || isPrecss) {
 				const parentPath = prevPath(resource.attrPath, 1),
 					parent = this.result[parentPath]
 				if (getType(parent) === '[object Array]') {

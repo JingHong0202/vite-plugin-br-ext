@@ -29,7 +29,7 @@ export declare class ManiFest {
 	hashTable: {
 		[key: string | number]: Resource
 	}
-	dynamicImports: Map<any, any>
+	dynamicImports: Map<string, string>
 	permission: never[]
 	inputs: {}
 	preWork: PreWork
@@ -42,7 +42,7 @@ export declare class ManiFest {
 		plugin: PluginContext,
 		chunk: OutputAsset,
 		bundle: OutputBundle
-	): Promise<string>
+	): Promise<string | undefined>
 	handlerResources(plugin: PluginContext): void
 	handlerDependencies(plugin: PluginContext, resource: Resource): void
 	handlerGroup(): void
