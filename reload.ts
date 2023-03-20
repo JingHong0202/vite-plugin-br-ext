@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
+import type { Plugin } from 'vite'
 
-export default () => {
+export default (): Plugin => {
 	const io = new Server(8890, {
 		cors: {
 			origin: '*',
