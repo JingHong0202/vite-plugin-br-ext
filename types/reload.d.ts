@@ -1,3 +1,4 @@
 import type { Plugin } from 'vite'
-declare const _default: () => Plugin
+import type { BrExtOptions } from './index'
+declare const _default: (options: BrExtOptions) => Plugin
 export default _default
