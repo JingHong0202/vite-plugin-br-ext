@@ -1,4 +1,4 @@
 packages:
   - tests/
   - tests/example/demo
-  - chrome-extension-auto-reload
+  - chrome-extension-reload

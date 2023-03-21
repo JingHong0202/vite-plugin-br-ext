@@ -8,6 +8,9 @@ import {
 } from 'chrome-launcher'
 import type { BrExtOptions } from './index'
 import path from 'path'
+import log from './utils/logger'
+import type { OutputBundle, OutputAsset, PluginContext } from 'rollup'
+
 const EXCLUDED_CHROME_FLAGS = ['--disable-extensions', '--mute-audio']
 const DEFAULT_CHROME_FLAGS = Launcher.defaultFlags().filter(
 	flag => !EXCLUDED_CHROME_FLAGS.includes(flag)
@@ -36,15 +39,21 @@ export default (options: BrExtOptions): Plugin => {
 			outDir = option.build?.outDir ?? 'dist'
 			root = option.root ?? ''
 		},
+
+		generateBundle(options, bundle) {
+			insertDebugCode(this, bundle)
+		},
+
 		async closeBundle() {
 			if (isFirst && reload) {
 				const extensions: string[] = [
-					path.resolve(__dirname, './chrome-extension-auto-reload/app'),
+					path.resolve(__dirname, './chrome-extension-reload/app'),
 					path.resolve(root, outDir)
 				]
 				chromeFlags.push(`--load-extension=${extensions.join(',')}`)
 				browserInstance = await launch({
 					chromeFlags,
+					port: reload.port,
 					ignoreDefaultFlags: true,
 					chromePath: reload.browser ?? getChromePath()
 				})
@@ -52,10 +61,42 @@ export default (options: BrExtOptions): Plugin => {
 					io.close()
 					browserInstance.kill()
 				})
-
 				isFirst = false
 			}
-			io.emit('change')
+			if (io.emit('change')) {
+				log.primary('extension reload success!', false)
+			} else {
+				log.error('extension reload error!')
+			}
 		}
+	}
+}
+
+function insertDebugCode(plugin: PluginContext, bundle: OutputBundle) {
+	const manifest = bundle['manifest.json'] as OutputAsset
+	if (!manifest) {
+		log.error('manifest.json Not exists!')
+	}
+
+	const code = `\n\r(function(){chrome.runtime.onMessageExternal.addListener((message) => {if (message && message.type === 'reload') {chrome.runtime.reload()}})})()\n\r`
+
+	try {
+		const json = JSON.parse(manifest.source as string)
+		if (!json.background?.service_worker) {
+			plugin.emitFile({
+				type: 'asset',
+				fileName: 'debugger.js',
+				source: code
+			})
+			json.background = {
+				service_worker: 'debugger.js'
+			}
+			manifest.source = JSON.stringify(json)
+		} else {
+			const asset = bundle[json.background.service_worker] as OutputAsset
+			asset.source = <string>asset.source + code
+		}
+	} catch (error) {
+		log.error(String(error))
 	}
 }

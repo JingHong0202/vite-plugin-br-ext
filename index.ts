@@ -6,8 +6,8 @@ export type BrExtOptions = {
 		browser?: string
 		port?: number
 	}
-	command?: string
-	mode?: 'development' | 'production'
+	// command?: string
+	mode?: string
 }
 
 export default (options?: BrExtOptions) => {

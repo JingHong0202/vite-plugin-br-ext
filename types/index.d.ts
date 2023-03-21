@@ -3,8 +3,7 @@ export type BrExtOptions = {
 		browser?: string
 		port?: number
 	}
-	command?: string
-	mode?: 'development' | 'production'
+	mode?: string
 }
 declare const _default: (
 	options?: BrExtOptions
