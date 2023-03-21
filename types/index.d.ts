@@ -1,4 +1,11 @@
+export type BrExtOptions = {
+	reload?: {
+		browser?: string
+		port?: number
+	}
+	mode?: string
+}
 declare const _default: (
-	hot: boolean
+	options?: BrExtOptions
 ) => import('vite').Plugin | import('vite').Plugin[]
 export default _default

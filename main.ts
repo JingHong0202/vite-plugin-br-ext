@@ -9,6 +9,7 @@ import { getType } from './utils'
 import iife from './mixin/iife'
 import log from './utils/logger'
 import type { Plugin } from 'vite'
+// import type { BrExtOptions } from './index'
 
 export default (): Plugin => {
 	let maniFest: ManiFest

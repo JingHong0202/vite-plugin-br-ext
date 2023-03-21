@@ -25,5 +25,4 @@ dist-ssr
 *.sln
 *.sw?
 .DS_Store
-chrome-*
 __snapshots__
