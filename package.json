@@ -1,6 +1,6 @@
 {
 	"name": "vite-plugin-br-ext",
-	"version": "0.0.11",
+	"version": "0.0.12",
 	"description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
 	"exports": {
 		".": {
