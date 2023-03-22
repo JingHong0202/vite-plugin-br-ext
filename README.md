@@ -15,21 +15,28 @@ npm install vite-plugin-br-ext -D
 
 > 2.1 导入 vite 插件
 
-```js
+```ts
 import bex from 'vite-plugin-br-ext'
 
 /**
- * first args: 开启插件自动重载,需安装额外安装插件辅助
- * link: https://github.com/JingHong0202/chrome-extension-auto-reload
- * 直接选择插件下的app文件夹加载即可
- * tips： 需要保持重载插件和开发插件是启动状态并配合 vite build -w 命令使用
+ * 插件自动重载需主动开启
+ * tips： 需要配合 vite build -w --mode development
  */
-plugins: [bex(true)]
+
+type BrExtOptions = {
+	reload?: {
+		browser?: string  // browser file local url
+		port?: number  // browser port
+	}
+	mode?: string  // development open debug| production close debug
+}
+
+plugins: [bex(options: BrExtOptions)]
 ```
 
 > 2.2 设置入口文件
 
-```js
+```ts
 build: {
 	rollupOptions: {
 		input: 'manifest.json' // 路径 默认 根目录/src/manifest.json,
