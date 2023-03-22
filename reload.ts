@@ -10,6 +10,7 @@ import type { BrExtOptions } from './index'
 import path from 'path'
 import log from './utils/logger'
 import type { OutputBundle, OutputAsset, PluginContext } from 'rollup'
+import fs from 'fs'
 
 const EXCLUDED_CHROME_FLAGS = ['--disable-extensions', '--mute-audio']
 const DEFAULT_CHROME_FLAGS = Launcher.defaultFlags().filter(
@@ -47,7 +48,7 @@ export default (options: BrExtOptions): Plugin => {
 		async closeBundle() {
 			if (isFirst && reload) {
 				const extensions: string[] = [
-					path.resolve(__dirname, './chrome-extension-reload/app'),
+					reloadExtensions() as string,
 					path.resolve(root, outDir)
 				]
 				chromeFlags.push(`--load-extension=${extensions.join(',')}`)
@@ -70,6 +71,25 @@ export default (options: BrExtOptions): Plugin => {
 			}
 		}
 	}
+}
+
+function reloadExtensions(
+	extensionUrl: string = __dirname,
+	maxDeep = 3
+): string | undefined {
+	const currentDir = fs.readdirSync(extensionUrl)
+	const find = currentDir.some(url => url.includes('chrome-extension-reload'))
+	if (find) {
+		return path.resolve(extensionUrl, './chrome-extension-reload/app')
+	} else if (maxDeep !== 0) {
+		const split = extensionUrl.split(path.sep)
+		if (split.length >= maxDeep)
+			return reloadExtensions(
+				split.slice(0, split.length - 1).join(path.sep),
+				--maxDeep
+			)
+	}
+	log.error('chrome-extension-reload Not Found!')
 }
 
 function insertDebugCode(plugin: PluginContext, bundle: OutputBundle) {

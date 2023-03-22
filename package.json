@@ -1,6 +1,6 @@
 {
 	"name": "vite-plugin-br-ext",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"description": "vite 插件，用于游览器扩展开发中能够使用 vite + vue3技术栈",
 	"exports": {
 		".": {
@@ -23,7 +23,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/JingHong0202/vite-plugin-browser-extension.git"
+		"url": "git+https://github.com/JingHong0202/vite-plugin-br-ext.git"
 	},
 	"keywords": [
 		"vite-plugin",
@@ -34,9 +34,9 @@
 	"author": "jinghong",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/JingHong0202/vite-plugin-browser-extension/issues"
+		"url": "https://github.com/JingHong0202/vite-plugin-br-ext/issues"
 	},
-	"homepage": "https://github.com/JingHong0202/vite-plugin-browser-extension#readme",
+	"homepage": "https://github.com/JingHong0202/vite-plugin-br-ext#readme",
 	"dependencies": {
 		"@babel/core": "^7.21.3",
 		"@babel/generator": "^7.21.1",
@@ -48,8 +48,7 @@
 		"chrome-launcher": "^0.15.1",
 		"glob": "^9.2.1",
 		"rollup": "3.15.0",
-		"socket.io": "^4.6.1",
-		"web-ext": "^7.6.0"
+		"socket.io": "^4.6.1"
 	},
 	"devDependencies": {
 		"@rollup/plugin-babel": "^6.0.3",
