@@ -22,7 +22,14 @@
 		"removeComments": true
 	},
 	"include": ["**ts", "**/**.ts"],
-	"exclude": ["node_modules", "*.config", "types", "dist", "tests"],
+	"exclude": [
+		"node_modules",
+		"*.config",
+		"types",
+		"dist",
+		"tests",
+		"chrome-extension-auto-reload"
+	],
 	"typeAcquisition": {
 		"enable": true
 	}
