@@ -119,6 +119,16 @@ export class ManiFest {
 					const dependencies = (<RenderedChunk>chunk).viteMetadata
 					if (dependencies?.importedCss.size) {
 						output.dependencies = dependencies
+						// lastIndexOf("})();\n")
+						bundle[
+							chunk.fileName
+						].source = `(function () {\n  'use strict';\n\n  var __GLOBAL_CSS = \`${[
+							...dependencies.importedCss
+						]
+							.map(file => bundle[file].source)
+							.join('\n\r')}\` \n\n${
+							bundle[chunk.fileName].source.slice(32) as string
+						}`
 					}
 				}
 				return output
@@ -238,7 +248,7 @@ export class ManiFest {
 		const source = await parsePreCSS(dependciesName, filePath)
 
 		if (chunk.fileName.startsWith('dynamic/')) {
-			;(<OutputAsset>bundle[chunk.fileName]).source =
+			(<OutputAsset>bundle[chunk.fileName]).source =
 				source ?? (<OutputAsset>bundle[chunk.fileName]).source
 		} else {
 			delete bundle[chunk.fileName]
