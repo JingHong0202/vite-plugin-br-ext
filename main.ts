@@ -72,7 +72,6 @@ export default (): Plugin => {
 				compact: true
 			}
 		},
-
 		async generateBundle(options, bundle) {
 			for (const chunk of Object.values(bundle)) {
 				const resource =
