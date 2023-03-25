@@ -118,6 +118,17 @@ export class ManiFest {
 				if ((<RenderedChunk>chunk).viteMetadata) {
 					const dependencies = (<RenderedChunk>chunk).viteMetadata
 					if (dependencies?.importedCss.size) {
+						if (chunk.code.includes('.attachShadow')) {
+							bundle[
+								chunk.fileName
+							].source = `(function () {\n  'use strict';\n\n  const __CSS_STYLE_CONTENT = \`${[
+								...dependencies.importedCss
+							]
+								.map(file => bundle[file].source)
+								.join('\n\r')}\`; \n\n${
+								bundle[chunk.fileName].source.slice(32) as string
+							}`
+						}
 						output.dependencies = dependencies
 					}
 				}
