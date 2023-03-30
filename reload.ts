@@ -56,7 +56,8 @@ export default (options: BrExtOptions): Plugin => {
 					chromeFlags,
 					port: reload.port,
 					ignoreDefaultFlags: true,
-					chromePath: reload.browser ?? getChromePath()
+					chromePath: reload.browser ?? getChromePath(),
+					userDataDir: reload.userDataDir
 				})
 				browserInstance.process.once('close', () => {
 					io.close()

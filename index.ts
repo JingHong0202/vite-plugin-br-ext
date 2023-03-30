@@ -5,6 +5,7 @@ export type BrExtOptions = {
 	reload?: {
 		browser?: string
 		port?: number
+		userDataDir?: boolean | string
 	}
 	// command?: string
 	mode?: string

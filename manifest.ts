@@ -388,7 +388,7 @@ export class ManiFest {
 				!isNetWorkLink().test(<string>target[key]) &&
 				(ext = path.extname(<string>target[key])) &&
 				!includeNumber().test(ext) &&
-				!hasMagic(<string>target[key])
+				!hasMagic(String(target[key]))
 			) {
 				// 处理有后缀的路径
 				const absolutePath = normalizePath(
@@ -421,7 +421,7 @@ export class ManiFest {
 				resource.ext = ext
 				group && (resource.group = group)
 				this.hashTable[keyMap] = <Required<Resource>>resource
-			} else if (parent && hasMagic(<string>target[key])) {
+			} else if (parent && hasMagic(String(target[key]))) {
 				// 处理有通配符的路径
 				this.matchFileByRules(<string>target[key], parent)
 			}
